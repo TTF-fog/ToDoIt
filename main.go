@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	"os"
+	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -19,10 +19,26 @@ type Task struct {
 	completed   bool
 	dueDate     time.Time
 }
+
+func (t Task) FilterValue() string {
+	return t.name
+}
+
+func (t Task) Title() string {
+	return t.name
+}
+func (t Task) Description() string {
+	return t.description
+}
+
 type status struct {
 	completed int
 	total     int
 	overdue   int
+}
+
+func (s *status) print() string {
+	return fmt.Sprintf("%d/%d completed, %d overdue", s.completed, s.total, s.overdue)
 }
 
 type TaskFolder struct {
@@ -31,28 +47,67 @@ type TaskFolder struct {
 	progress              float64
 	parent                *TaskFolder //so we can handle a folder of folders
 	children_tasks        []Task
-	children_task_folders []TaskFolder
+	children_task_folders []*TaskFolder
 	status                status
 }
 
-func (i TaskFolder) Title() string       { return i.title }
-func (i TaskFolder) Description() string { return i.desc }
-func (i TaskFolder) FilterValue() string { return i.title }
+func (i *TaskFolder) Title() string       { return i.title }
+func (i *TaskFolder) Description() string { return i.desc }
+func (i *TaskFolder) FilterValue() string { return i.title }
+func (i *TaskFolder) returnPath() string {
+	s := "Task View\n"
+	for _, item := range i.children_task_folders { //once for nested tasks
+		s += item.Title() + "\n"
+		for _, i := range item.children_tasks {
+			s += "- 📝 " + i.Title() + "\n"
+		}
 
-type model struct {
-	list list.Model
+	}
+	for _, i := range i.children_tasks {
+		s += "📝 " + i.Title() + "\n"
+	}
+	return s
 }
 
-func (m model) Init() tea.Cmd {
+type model struct {
+	list          list.Model
+	statusString  string
+	currentFolder *TaskFolder
+}
+
+func (m *model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
-			return m, tea.Quit
+		if m.list.FilterState() == list.Filtering {
+			break
 		}
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "enter":
+			if selectedItem, ok := m.list.SelectedItem().(*TaskFolder); ok {
+				m.recreateList(selectedItem)
+			}
+			return m, nil
+		case "b":
+			if m.currentFolder != nil {
+				m.recreateList(m.currentFolder.parent)
+
+			}
+			return m, nil
+		case "p":
+			switch v := m.list.SelectedItem().(type) {
+			case Task:
+				m.list.NewStatusMessage("Cannot preview Task!")
+			case *TaskFolder:
+				m.statusString = v.returnPath()
+			}
+		}
+
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
@@ -63,62 +118,55 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) View() string {
-	return docStyle.Render(m.list.View())
+func (m *model) View() string {
+	var s string
+
+	s += lipgloss.JoinHorizontal(lipgloss.Left, docStyle.Render(m.statusString), docStyle.Render(m.list.View()))
+	return s
 }
-
-func main() {
-	items := []list.Item{
-		TaskFolder{title: "Raspberry Pi’s", desc: "I have ’em all over my house"},
-		TaskFolder{title: "Nutella", desc: "It's good on toast"},
-		TaskFolder{title: "Bitter melon", desc: "It cools you down"},
-		TaskFolder{title: "Nice socks", desc: "And by that I mean socks without holes"},
-		TaskFolder{title: "Eight hours of sleep", desc: "I had this once"},
-		TaskFolder{title: "Cats", desc: "Usually"},
-		TaskFolder{title: "Plantasia, the album", desc: "My plants love it too"},
-		TaskFolder{title: "Pour over coffee", desc: "It takes forever to make though"},
-		TaskFolder{title: "VR", desc: "Virtual reality...what is there to say?"},
-		TaskFolder{title: "Noguchi Lamps", desc: "Such pleasing organic forms"},
-		TaskFolder{title: "Linux", desc: "Pretty much the best OS"},
-		TaskFolder{title: "Business school", desc: "Just kidding"},
-		TaskFolder{title: "Pottery", desc: "Wet clay is a great feeling"},
-		TaskFolder{title: "Shampoo", desc: "Nothing like clean hair"},
-		TaskFolder{title: "Table tennis", desc: "It’s surprisingly exhausting"},
-		TaskFolder{title: "Milk crates", desc: "Great for packing in your extra stuff"},
-		TaskFolder{title: "Afternoon tea", desc: "Especially the tea sandwich part"},
-		TaskFolder{title: "Stickers", desc: "The thicker the vinyl the better"},
-		TaskFolder{title: "20° Weather", desc: "Celsius, not Fahrenheit"},
-		TaskFolder{title: "Warm light", desc: "Like around 2700 Kelvin"},
-		TaskFolder{title: "The vernal equinox", desc: "The autumnal equinox is pretty good too"},
-		TaskFolder{title: "Gaffer’s tape", desc: "Basically sticky fabric"},
-		TaskFolder{title: "Terrycloth", desc: "In other words, towel fabric"},
+func (m *model) recreateList(folder *TaskFolder) {
+	if folder == nil {
+		return
 	}
+	m.currentFolder = folder
+	var items []list.Item
 
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	m.list.Title = "My Fave Things"
+	for _, child := range folder.children_task_folders {
+		if !strings.HasPrefix(child.title, "📁") {
+			child.title = "📁 " + child.title
+		}
+		items = append(items, child)
+	}
+	for _, child := range folder.children_tasks {
+		if !strings.HasPrefix(child.name, "📝") {
+			child.name = "📝 " + child.name
+		}
+		items = append(items, child)
+	}
 	delegate := list.NewDefaultDelegate()
-	delegate.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var title string
-		if i, ok := m.SelectedItem().(TaskFolder); ok {
-			title = i.Title()
-		} else {
-			return nil
+	newList := list.New(items, delegate, 0, 0)
+	newList.Title = fmt.Sprintf("%s, %s", m.currentFolder.Title(), m.currentFolder.status.print())
+	newList.SetSize(m.list.Width(), m.list.Height())
+	m.list = newList
+}
+func main() {
+	items := return_test_data()
+	delegate := list.NewDefaultDelegate()
+	root := TaskFolder{title: "To-Dos"}
+	for _, item := range items {
+		if folder, ok := item.(*TaskFolder); ok {
+			folder.parent = &root
+			root.children_task_folders = append(root.children_task_folders, folder)
 		}
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, key.NewBinding(key.WithKeys("enter"))):
-				return m.NewStatusMessage(title)
-			}
-		}
-		return nil
 	}
-	m.list.SetDelegate(delegate)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	m := model{list: list.New(nil, delegate, 0, 0)}
+	m.recreateList(&root)
+	m.statusString = "Press P to preview an Item!"
+	m.list.Title = "Task View "
+	p := tea.NewProgram(&m, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
 }
-

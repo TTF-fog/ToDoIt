@@ -3,15 +3,24 @@ package main
 import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"go.dalton.dog/bubbleup"
+	"io"
 	"os"
 	"strings"
 	"time"
-
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var docStyle = lipgloss.NewStyle().
+	Margin(1, 2).
+	BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("63"))
+
+const (
+	maxWidth = 80
+	padding  = 2
+)
 
 type Task struct {
 	name        string
@@ -20,16 +29,9 @@ type Task struct {
 	dueDate     time.Time
 }
 
-func (t Task) FilterValue() string {
-	return t.name
-}
-
-func (t Task) Title() string {
-	return t.name
-}
-func (t Task) Description() string {
-	return t.description
-}
+func (t Task) FilterValue() string { return t.name }
+func (t Task) Title() string       { return t.name }
+func (t Task) Description() string { return t.description }
 
 type status struct {
 	completed int
@@ -44,8 +46,8 @@ func (s *status) print() string {
 type TaskFolder struct {
 	title                 string
 	desc                  string
-	progress              float64
-	parent                *TaskFolder //so we can handle a folder of folders
+	progress              progress.Model
+	parent                *TaskFolder
 	children_tasks        []Task
 	children_task_folders []*TaskFolder
 	status                status
@@ -55,8 +57,8 @@ func (i *TaskFolder) Title() string       { return i.title }
 func (i *TaskFolder) Description() string { return i.desc }
 func (i *TaskFolder) FilterValue() string { return i.title }
 func (i *TaskFolder) returnPath() string {
-	s := "Task View\n"
-	for _, item := range i.children_task_folders { //once for nested tasks
+	s := "Task View \n"
+	for _, item := range i.children_task_folders {
 		s += item.Title() + "\n"
 		for _, i := range item.children_tasks {
 			s += "- 📝 " + i.Title() + "\n"
@@ -69,17 +71,84 @@ func (i *TaskFolder) returnPath() string {
 	return s
 }
 
+func (i *TaskFolder) update(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		i.progress.Width = msg.Width - padding*2 - 4
+		if i.progress.Width > maxWidth {
+			i.progress.Width = maxWidth
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (i *TaskFolder) View() string {
+
+	pad := strings.Repeat(" ", padding)
+	return "" + pad + i.title + "" + pad + i.progress.ViewAs(0.12) + "\n"
+}
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int { return 2 }
+
+func (d itemDelegate) Spacing() int { return 0 }
+
+func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	switch item := listItem.(type) {
+	case *TaskFolder:
+		s := item
+
+		str := fmt.Sprintf("%s\n%s", s.title, s.progress.ViewAs(float64(s.status.completed/s.status.total*100)))
+
+		fn := lipgloss.NewStyle().PaddingLeft(4).Render
+		if index == m.Index() {
+			fn = func(s ...string) string {
+				return lipgloss.NewStyle().
+					PaddingLeft(2).
+					Foreground(lipgloss.Color("201")).
+					Background(lipgloss.Color("235")).
+					Render("> " + strings.Join(s, " "))
+			}
+		}
+		fmt.Fprint(w, fn(str))
+		return
+	case Task:
+		s := item
+		str := fmt.Sprintf("%s \n", s.name)
+
+		fn := lipgloss.NewStyle().PaddingLeft(4).Render
+		if index == m.Index() {
+			fn = func(s ...string) string {
+				return lipgloss.NewStyle().
+					PaddingLeft(2).
+					Foreground(lipgloss.Color("201")).
+					Background(lipgloss.Color("235")).
+					Render("> " + strings.Join(s, " "))
+			}
+		}
+
+		fmt.Fprint(w, fn(str))
+	}
+}
+
 type model struct {
 	list          list.Model
 	statusString  string
 	currentFolder *TaskFolder
+	alert         bubbleup.AlertModel
 }
 
 func (m *model) Init() tea.Cmd {
-	return nil
+	return m.alert.Init()
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var alertCmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.list.FilterState() == list.Filtering {
@@ -109,20 +178,25 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
+		v, h := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+		for _, val := range m.list.Items() {
+			if v, ok := val.(*TaskFolder); ok {
+				v.update(msg)
+			}
+		}
 	}
-
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	return m, tea.Batch(alertCmd, cmd)
 }
 
 func (m *model) View() string {
 	var s string
 
 	s += lipgloss.JoinHorizontal(lipgloss.Left, docStyle.Render(m.statusString), docStyle.Render(m.list.View()))
-	return s
+
+	return m.alert.Render(s)
 }
 func (m *model) recreateList(folder *TaskFolder) {
 	if folder == nil {
@@ -143,7 +217,7 @@ func (m *model) recreateList(folder *TaskFolder) {
 		}
 		items = append(items, child)
 	}
-	delegate := list.NewDefaultDelegate()
+	delegate := itemDelegate{}
 	newList := list.New(items, delegate, 0, 0)
 	newList.Title = fmt.Sprintf("%s, %s", m.currentFolder.Title(), m.currentFolder.status.print())
 	newList.SetSize(m.list.Width(), m.list.Height())
@@ -151,7 +225,7 @@ func (m *model) recreateList(folder *TaskFolder) {
 }
 func main() {
 	items := return_test_data()
-	delegate := list.NewDefaultDelegate()
+	delegate := itemDelegate{}
 	root := TaskFolder{title: "To-Dos"}
 	for _, item := range items {
 		if folder, ok := item.(*TaskFolder); ok {
@@ -163,7 +237,7 @@ func main() {
 	m.recreateList(&root)
 	m.statusString = "Press P to preview an Item!"
 	m.list.Title = "Task View "
-	p := tea.NewProgram(&m, tea.WithAltScreen())
+	p := tea.NewProgram(&m)
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)

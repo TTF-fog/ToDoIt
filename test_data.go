@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	"math/rand"
 	"time"
 )
@@ -30,46 +31,44 @@ var (
 	}
 )
 
-// randomString selects a random string from a slice of strings.
 func randomString(r *rand.Rand, s []string) string {
 	return s[r.Intn(len(s))]
 }
 
-// generateRandomTask creates a new Task with human-readable data.
 func generateRandomTask(r *rand.Rand) Task {
 	return Task{
 		name:        randomString(r, taskNames),
 		description: randomString(r, taskDescriptions),
 		completed:   r.Intn(2) == 0,
-		dueDate:     time.Now().Add(time.Duration(r.Intn(72)-24) * time.Hour), // Can be overdue
+		dueDate:     time.Now().Add(time.Duration(r.Intn(72)-24) * time.Hour),
 	}
 }
 
-// generateRandomTaskFolder creates a new TaskFolder with human-readable data.
 func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *TaskFolder {
+	m := progress.New(progress.WithDefaultGradient())
+
 	folder := &TaskFolder{
 		title:    randomString(r, folderTitles),
 		desc:     randomString(r, folderDescriptions),
-		progress: r.Float64(),
+		progress: m,
 		parent:   parent,
 	}
 
-	// Add child tasks
-	numTasks := r.Intn(4) + 1 // 1 to 4 child tasks
+	numTasks := r.Intn(4) + 1
 	for i := 0; i < numTasks; i++ {
-		folder.children_tasks = append(folder.children_tasks, generateRandomTask(r))
+		task := generateRandomTask(r)
+		folder.children_tasks = append(folder.children_tasks, task)
+
 	}
 
-	// Add child folders (and limit recursion depth)
 	if depth > 0 {
-		numFolders := r.Intn(3) // 0 to 2 child folders
+		numFolders := r.Intn(3)
 		for i := 0; i < numFolders; i++ {
 			childFolder := generateRandomTaskFolder(r, depth-1, folder)
 			folder.children_task_folders = append(folder.children_task_folders, childFolder)
 		}
 	}
 
-	// Calculate status based on children
 	completedCount := 0
 	overdueCount := 0
 	for _, task := range folder.children_tasks {
@@ -89,13 +88,12 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 	return folder
 }
 
-// return_test_data generates a list of list.Items for testing.
 func return_test_data() []list.Item {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var items []list.Item
-	numRootFolders := r.Intn(3) + 3 // 3 to 5 root folders
+	numRootFolders := r.Intn(3) + 3
 	for i := 0; i < numRootFolders; i++ {
-		items = append(items, generateRandomTaskFolder(r, 2, nil)) // Max depth of 2
+		items = append(items, generateRandomTaskFolder(r, 2, nil))
 	}
 	return items
 }

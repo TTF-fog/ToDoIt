@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="" />
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)">
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.mod" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.mod" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.sum" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.sum" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,6 +24,21 @@
     </option>
   </component>
   <component name="GOROOT" url="file:///usr/lib/go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;TTF-fog&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/TTF-fog/ToDoIt.git&quot;,
+    &quot;accountId&quot;: &quot;7b87e01c-7d5a-4f62-8477-db5615ca22d6&quot;
+  }
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -29,14 +50,19 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
+    "Go Build.go build ToDoIt.executor": "Debug",
+    "Go Build.go build main.go.executor": "Debug",
+    "Go Remote.Debug Bubbletea.executor": "Debug",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.GoLinterPluginOnboarding": "true",
     "RunOnceActivity.GoLinterPluginStorageMigration": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
     "RunOnceActivity.go.migrated.go.modules.settings": "true",
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "git-widget-placeholder": "master",
     "go.import.settings.migrated": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "/home/ishaan",
@@ -46,6 +72,30 @@
     "onboarding.tips.debug.path": "/home/ishaan/home/ishaan/GolandProjects/ToDoIt/main.go"
   }
 }]]></component>
+  <component name="RunManager" selected="Go Remote.Debug Bubbletea">
+    <configuration name="go build ToDoIt" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="ToDoIt" />
+      <working_directory value="$USER_HOME$/$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="ToDoIt" />
+      <directory value="$USER_HOME$/$PROJECT_DIR$" />
+      <filePath value="$USER_HOME$/$PROJECT_DIR$/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
+      <option name="disconnectOption" value="ASK" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Go Build.go build ToDoIt" />
+      <item itemvalue="Go Remote.Debug Bubbletea" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build ToDoIt" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -66,6 +116,21 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)" />
+    <option name="LAST_COMMIT_MESSAGE" value="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

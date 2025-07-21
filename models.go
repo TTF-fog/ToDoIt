@@ -19,21 +19,36 @@ type TaskFolder struct {
 func (i *TaskFolder) Title() string       { return i.title }
 func (i *TaskFolder) Description() string { return i.desc }
 func (i *TaskFolder) FilterValue() string { return i.title }
-func (i *TaskFolder) returnPath() string {
+func (i *TaskFolder) returnTree() string {
 	s := "Task View \n"
+	//TODO make this recursive?
+
 	for _, item := range i.children_task_folders {
 		s += item.Title() + "\n"
 		for _, i := range item.children_tasks {
-			s += i.returnStatusString()
+			s += " - " + i.returnStatusString()
 
 		}
 
 	}
 	for _, i := range i.children_tasks {
-		s += i.returnStatusString()
+		s += " -" + i.returnStatusString()
 
 	}
 	return s
+}
+func (i *TaskFolder) returnPath() string {
+	var pathParts []string
+	current := i
+	pathParts = append(pathParts, "Root")
+	for current != nil {
+		pathParts = append(pathParts, current.Title())
+		current = current.parent
+	}
+
+	//otherwise it ends up being bottom-to-top
+	//slices.Reverse(pathParts)
+	return strings.Join(pathParts, " > ")
 }
 func (t Task) returnStatusString() string {
 	var s string

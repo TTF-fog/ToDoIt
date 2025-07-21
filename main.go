@@ -25,10 +25,12 @@ const (
 )
 
 type Task struct {
-	name        string
-	description string
-	completed   bool
-	dueDate     time.Time
+	parentFolder *TaskFolder
+	name         string
+	description  string
+	completed    bool
+	dueDate      time.Time
+	overdue      bool
 }
 
 var keys = newListKeyMap()
@@ -36,6 +38,23 @@ var keys = newListKeyMap()
 func (t Task) FilterValue() string { return t.name }
 func (t Task) Title() string       { return t.name }
 func (t Task) Description() string { return t.description }
+func (t Task) setTimeStatus() {
+	if time.Now().After(t.dueDate) {
+		t.overdue = true
+		t.parentFolder.status.overdue += 1
+	} else {
+		t.overdue = false
+	}
+}
+func (t Task) setCompletionStatus(status bool) {
+	if status {
+		t.completed = true
+		t.parentFolder.status.completed += 1
+	} else {
+		t.completed = false
+		t.parentFolder.status.completed -= 1
+	}
+}
 
 type status struct {
 	completed int
@@ -44,12 +63,21 @@ type status struct {
 }
 
 func (s *status) print() string {
-	return fmt.Sprintf("%d/%d completed, %d overdue", s.completed, s.total, s.overdue)
+	render_warning := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF593B")).Render
+	//render_info := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFED33")).Render
+	var pp_string string
+	if s.overdue > 0 {
+		pp_string += render_warning(fmt.Sprintf("%d overdue, ", s.overdue))
+	} else {
+		pp_string += fmt.Sprintf("%d overdue, ", s.overdue)
+	}
+	pp_string += fmt.Sprintf("%d/%d completed \n", s.completed, s.total)
+	return pp_string
 }
 
 type itemDelegate struct{}
 
-func (d itemDelegate) Height() int { return 2 }
+func (d itemDelegate) Height() int { return 4 }
 
 func (d itemDelegate) Spacing() int { return 0 }
 
@@ -64,8 +92,8 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		if s.status.total > 0 {
 			p = float64(s.status.completed) / float64(s.status.total)
 		}
-		str := fmt.Sprintf("%s\n%s", s.title, s.progress.ViewAs(p))
 
+		str := fmt.Sprintf("%s\n %s \n%s", s.title, s.status.print(), s.progress.ViewAs(p))
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
 		if index == m.Index() {
 			fn = func(s ...string) string {
@@ -118,6 +146,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "r": //reload test data
+			main()
 		case "enter":
 			if selectedItem, ok := m.list.SelectedItem().(*TaskFolder); ok {
 				m.recreateList(selectedItem)
@@ -134,7 +164,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case Task:
 				m.alert.NewAlertCmd(bubbleup.ErrorKey, "Cannot preview Task!")
 			case *TaskFolder:
-				m.statusString = v.returnPath()
+				m.statusString = v.returnTree()
+
 			}
 
 		}
@@ -162,6 +193,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 type listKeyMap struct {
 	previewItem key.Binding
+	reloadData  key.Binding
 	goBack      key.Binding
 }
 
@@ -169,6 +201,7 @@ func newListKeyMap() *listKeyMap {
 	return &listKeyMap{
 		previewItem: key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "preview task folder structure")),
 		goBack:      key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "go to previous folder")),
+		reloadData:  key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload data")),
 	}
 }
 func (m *model) View() string {
@@ -199,10 +232,11 @@ func (m *model) recreateList(folder *TaskFolder) {
 	}
 	delegate := itemDelegate{}
 	newList := list.New(items, delegate, 0, 0)
-	newList.Title = fmt.Sprintf("%s, %s", m.currentFolder.Title(), m.currentFolder.status.print())
+	newList.Title = fmt.Sprintf("%s \n %s", m.currentFolder.returnPath(), m.currentFolder.status.print())
 	newList.SetSize(m.list.Width(), m.list.Height())
 
 	m.list = newList
+
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			keys.goBack,

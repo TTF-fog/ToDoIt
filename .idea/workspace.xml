@@ -3,8 +3,12 @@
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="ALL" />
   </component>
+  <component name="BookmarksViewState">
+    <option name="askBeforeDeletingLists" value="false" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)">
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="segment code, implement key binding hints">
+      <change afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.mod" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.mod" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.sum" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/go.sum" afterDir="false" />
@@ -47,60 +51,134 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "Go Build.go build ToDoIt.executor": "Debug",
-    "Go Build.go build main.go.executor": "Debug",
-    "Go Remote.Debug Bubbletea.executor": "Debug",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.GoLinterPluginOnboarding": "true",
-    "RunOnceActivity.GoLinterPluginStorageMigration": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/home/ishaan",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "onboarding.tips.debug.path": "/home/ishaan/home/ishaan/GolandProjects/ToDoIt/main.go"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;Go Build.Build For Debug.executor&quot;: &quot;Debug&quot;,
+    &quot;Go Build.go build ToDoIt.executor&quot;: &quot;Debug&quot;,
+    &quot;Go Build.go build main.go.executor&quot;: &quot;Debug&quot;,
+    &quot;Go Remote.Debug Bubbletea.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginOnboarding&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.GoLinterPluginStorageMigration&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;Shell Script.Setup Delve.executor&quot;: &quot;Debug&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/ishaan/home/ishaan/GolandProjects/ToDoIt&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;/home/ishaan/home/ishaan/GolandProjects/ToDoIt/main.go&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMConfigurable&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Go Remote.Debug Bubbletea">
-    <configuration name="go build ToDoIt" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+}</component>
+  <component name="RunManager" selected="Compound.Debug Bubbletea">
+    <configuration name="Build For Debug" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="ToDoIt" />
+      <working_directory value="$USER_HOME$/$PROJECT_DIR$" />
+      <go_parameters value="-gcflags=&quot;all=-N -l&quot;" />
+      <kind value="PACKAGE" />
+      <package value="ToDoIt" />
+      <directory value="$USER_HOME$/$PROJECT_DIR$" />
+      <filePath value="$USER_HOME$/$PROJECT_DIR$/main.go" />
+      <output_directory value="$USER_HOME$/$PROJECT_DIR$" />
+      <option name="run" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Build For Debug" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="ToDoIt" />
+      <working_directory value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+      <go_parameters value="-gcflags=&quot;all=-N -l&quot;" />
+      <kind value="PACKAGE" />
+      <package value="ToDoIt" />
+      <directory value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+      <filePath value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" />
+      <output_directory value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+      <option name="run" value="false" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build ToDoIt" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
       <module name="ToDoIt" />
       <working_directory value="$USER_HOME$/$PROJECT_DIR$" />
       <kind value="PACKAGE" />
       <package value="ToDoIt" />
       <directory value="$USER_HOME$/$PROJECT_DIR$" />
-      <filePath value="$USER_HOME$/$PROJECT_DIR$/main.go" />
+      <filePath value="$USER_HOME$/$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build ToDoIt" type="GoApplicationRunConfiguration" factoryName="Go Application" nameIsGenerated="true">
+      <module name="ToDoIt" />
+      <working_directory value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+      <kind value="PACKAGE" />
+      <package value="ToDoIt" />
+      <directory value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
+      <filePath value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
       <method v="2" />
     </configuration>
     <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
-      <option name="disconnectOption" value="ASK" />
+      <option name="disconnectOption" value="STOP" />
+      <disconnect value="STOP" />
+      <method v="2">
+        <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build For Debug" run_configuration_type="GoApplicationRunConfiguration" />
+      </method>
+    </configuration>
+    <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
+      <option name="disconnectOption" value="STOP" />
+      <disconnect value="STOP" />
+      <method v="2">
+        <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build For Debug" run_configuration_type="GoApplicationRunConfiguration" />
+      </method>
+    </configuration>
+    <configuration name="Setup Delve" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="kitty -d ~/$PROJECT_DIR$ -e dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./Build_For_Debug" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./dem" />
+      <option name="SCRIPT_OPTIONS" value="" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="/usr/bin/zsh" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="false" />
+      <option name="EXECUTE_SCRIPT_FILE" value="false" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <configuration name="Setup Delve" type="ShConfigurationType">
+      <option name="SCRIPT_TEXT" value="kitty -d ~/$PROJECT_DIR$ -e dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./Build_For_Debug" />
+      <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+      <option name="SCRIPT_PATH" value="dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./dem" />
+      <option name="SCRIPT_OPTIONS" value="" />
+      <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="true" />
+      <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+      <option name="INTERPRETER_PATH" value="/usr/bin/zsh" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="EXECUTE_IN_TERMINAL" value="false" />
+      <option name="EXECUTE_SCRIPT_FILE" value="false" />
+      <envs />
       <method v="2" />
     </configuration>
     <list>
+      <item itemvalue="Compound.Debug Bubbletea" />
       <item itemvalue="Go Build.go build ToDoIt" />
+      <item itemvalue="Go Build.Build For Debug" />
       <item itemvalue="Go Remote.Debug Bubbletea" />
+      <item itemvalue="Shell Script.Setup Delve" />
     </list>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Go Build.go build ToDoIt" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-gosdk-3b128438d3f6-4b567d62c776-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-251.25410.140" />
-        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-GO-251.25410.140" />
+        <option value="bundled-gosdk-3b128438d3f6-07d2d2d66b1e-org.jetbrains.plugins.go.sharedIndexes.bundled-GO-251.26927.50" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-GO-251.26927.50" />
       </set>
     </attachedChunks>
   </component>
@@ -130,9 +208,31 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)" />
-    <option name="LAST_COMMIT_MESSAGE" value="a bunch of features which i cannot remember for the life of me (chec the diffs if you really care)" />
+    <MESSAGE value="adding progress bars to list entries, general ui revamps" />
+    <MESSAGE value="segment code, implement key binding hints" />
+    <option name="LAST_COMMIT_MESSAGE" value="segment code, implement key binding hints" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="NONE" type="DlvLineBreakpoint">
+          <condition expression="true" language="go" />
+          <url>file://$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go</url>
+          <line>83</line>
+          <log-expression expression="folder.status" language="go" />
+          <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" log-message="true" suspend="NONE" type="DlvLineBreakpoint">
+          <condition expression="task.completed == true" language="go" />
+          <url>file://$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go</url>
+          <line>60</line>
+          <log-expression expression="task.name" language="go" mode="CODE_FRAGMENT" />
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"go.dalton.dog/bubbleup"
@@ -18,8 +18,10 @@ var docStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("63"))
 
 const (
-	maxWidth = 80
-	padding  = 2
+	maxWidth       = 80
+	minFrameWidth  = 200
+	minFrameHeight = 200
+	padding        = 2
 )
 
 type Task struct {
@@ -28,6 +30,8 @@ type Task struct {
 	completed   bool
 	dueDate     time.Time
 }
+
+var keys = newListKeyMap()
 
 func (t Task) FilterValue() string { return t.name }
 func (t Task) Title() string       { return t.name }
@@ -43,53 +47,6 @@ func (s *status) print() string {
 	return fmt.Sprintf("%d/%d completed, %d overdue", s.completed, s.total, s.overdue)
 }
 
-type TaskFolder struct {
-	title                 string
-	desc                  string
-	progress              progress.Model
-	parent                *TaskFolder
-	children_tasks        []Task
-	children_task_folders []*TaskFolder
-	status                status
-}
-
-func (i *TaskFolder) Title() string       { return i.title }
-func (i *TaskFolder) Description() string { return i.desc }
-func (i *TaskFolder) FilterValue() string { return i.title }
-func (i *TaskFolder) returnPath() string {
-	s := "Task View \n"
-	for _, item := range i.children_task_folders {
-		s += item.Title() + "\n"
-		for _, i := range item.children_tasks {
-			s += "- 📝 " + i.Title() + "\n"
-		}
-
-	}
-	for _, i := range i.children_tasks {
-		s += "📝 " + i.Title() + "\n"
-	}
-	return s
-}
-
-func (i *TaskFolder) update(msg tea.Msg) tea.Cmd {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		i.progress.Width = msg.Width - padding*2 - 4
-		if i.progress.Width > maxWidth {
-			i.progress.Width = maxWidth
-		}
-		return nil
-	default:
-		return nil
-	}
-}
-
-func (i *TaskFolder) View() string {
-
-	pad := strings.Repeat(" ", padding)
-	return "" + pad + i.title + "" + pad + i.progress.ViewAs(0.12) + "\n"
-}
-
 type itemDelegate struct{}
 
 func (d itemDelegate) Height() int { return 2 }
@@ -103,7 +60,11 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	case *TaskFolder:
 		s := item
 
-		str := fmt.Sprintf("%s\n%s", s.title, s.progress.ViewAs(float64(s.status.completed/s.status.total*100)))
+		var p float64
+		if s.status.total > 0 {
+			p = float64(s.status.completed) / float64(s.status.total)
+		}
+		str := fmt.Sprintf("%s\n%s", s.title, s.progress.ViewAs(p))
 
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
 		if index == m.Index() {
@@ -171,26 +132,45 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			switch v := m.list.SelectedItem().(type) {
 			case Task:
-				m.list.NewStatusMessage("Cannot preview Task!")
+				m.alert.NewAlertCmd(bubbleup.ErrorKey, "Cannot preview Task!")
 			case *TaskFolder:
 				m.statusString = v.returnPath()
 			}
+
 		}
 
 	case tea.WindowSizeMsg:
 		v, h := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		if v > minFrameWidth && h > minFrameHeight {
+			m.alert.NewAlertCmd(bubbleup.ErrorKey, "Frame dimensions too small :(")
+		}
+		statusWidth := lipgloss.Width(docStyle.Render(m.statusString))
+		m.list.SetSize(msg.Width-statusWidth-h, msg.Height-v)
+		childMsg := tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
 		for _, val := range m.list.Items() {
 			if v, ok := val.(*TaskFolder); ok {
-				v.update(msg)
+				v.update(childMsg)
 			}
 		}
 	}
 	var cmd tea.Cmd
+	outAlert, outCmd := m.alert.Update(msg)
+	m.alert = outAlert.(bubbleup.AlertModel)
 	m.list, cmd = m.list.Update(msg)
-	return m, tea.Batch(alertCmd, cmd)
+	return m, tea.Batch(alertCmd, cmd, outCmd)
 }
 
+type listKeyMap struct {
+	previewItem key.Binding
+	goBack      key.Binding
+}
+
+func newListKeyMap() *listKeyMap {
+	return &listKeyMap{
+		previewItem: key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "preview task folder structure")),
+		goBack:      key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "go to previous folder")),
+	}
+}
 func (m *model) View() string {
 	var s string
 
@@ -213,7 +193,7 @@ func (m *model) recreateList(folder *TaskFolder) {
 	}
 	for _, child := range folder.children_tasks {
 		if !strings.HasPrefix(child.name, "📝") {
-			child.name = "📝 " + child.name
+			child.name = child.returnStatusString()
 		}
 		items = append(items, child)
 	}
@@ -221,9 +201,17 @@ func (m *model) recreateList(folder *TaskFolder) {
 	newList := list.New(items, delegate, 0, 0)
 	newList.Title = fmt.Sprintf("%s, %s", m.currentFolder.Title(), m.currentFolder.status.print())
 	newList.SetSize(m.list.Width(), m.list.Height())
+
 	m.list = newList
+	m.list.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			keys.goBack,
+			keys.previewItem,
+		}
+	}
 }
 func main() {
+
 	items := return_test_data()
 	delegate := itemDelegate{}
 	root := TaskFolder{title: "To-Dos"}

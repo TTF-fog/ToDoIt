@@ -35,12 +35,16 @@ func randomString(r *rand.Rand, s []string) string {
 	return s[r.Intn(len(s))]
 }
 
-func generateRandomTask(r *rand.Rand, completionChance float64) Task {
-	return Task{
-		name:        randomString(r, taskNames),
-		description: randomString(r, taskDescriptions),
-		completed:   r.Float64() < completionChance,
-		dueDate:     time.Now().Add(time.Duration(r.Intn(72)-24) * time.Hour),
+func generateRandomTask(r *rand.Rand, completionChance float64, folder *TaskFolder) *Task {
+	dueDate := time.Now().Add(time.Duration(r.Intn(72)-24) * time.Hour)
+	completed := r.Float64() < completionChance
+	return &Task{
+		name:         randomString(r, taskNames),
+		description:  randomString(r, taskDescriptions),
+		completed:    completed,
+		dueDate:      dueDate,
+		parentFolder: folder,
+		overdue:      !completed && dueDate.Before(time.Now()),
 	}
 }
 
@@ -57,7 +61,7 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 	completionChance := r.Float64()
 	numTasks := r.Intn(4) + 1
 	for i := 0; i < numTasks; i++ {
-		task := generateRandomTask(r, completionChance)
+		task := generateRandomTask(r, completionChance, folder)
 		folder.children_tasks = append(folder.children_tasks, task)
 
 	}
@@ -76,7 +80,7 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 		if task.completed {
 			completedCount++
 		}
-		if !task.completed && task.dueDate.Before(time.Now()) {
+		if task.overdue {
 			overdueCount++
 		}
 	}

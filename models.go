@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ type TaskFolder struct {
 	desc                  string
 	progress              progress.Model
 	parent                *TaskFolder
-	children_tasks        []Task
+	children_tasks        []*Task
 	children_task_folders []*TaskFolder
 	status                status
 }
@@ -50,15 +51,25 @@ func (i *TaskFolder) returnPath() string {
 	//slices.Reverse(pathParts)
 	return strings.Join(pathParts, " > ")
 }
-func (t Task) returnStatusString() string {
+func (t *Task) returnStatusString() string {
 	var s string
+	render_warning := lipgloss.NewStyle().Foreground(lipgloss.Color("#FF593B")).Render
 	if t.completed {
 		s += "📝 (✓Completed!) " + t.Title() + "\n"
+		s += ""
 		s += t.Description() + "\n"
 	} else {
 		s += "📝 " + t.Title() + "\n"
+		if !t.dueDate.IsZero() {
+			if t.overdue {
+				s += render_warning("📅 Overdue! %s\n", t.dueDate.Format("2006-01-02 15:04:05"))
+			} else {
+				s += "📅" + t.dueDate.Format("DD/MM/06 15:04:05 ") + "\n"
+			}
+		}
 		s += t.Description() + "\n"
 	}
+
 	return s
 }
 

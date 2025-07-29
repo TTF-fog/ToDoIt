@@ -7,8 +7,9 @@
     <option name="askBeforeDeletingLists" value="false" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="prettification and shit">
-      <change afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/brushes.go" afterDir="false" />
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="QoL updates, convert everything into a pointer, prevent nil errors in test data generation, and setup completion marking">
+      <change afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" afterDir="false" />
+      <change afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" afterDir="false" />
@@ -127,9 +128,7 @@
     <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
       <option name="disconnectOption" value="STOP" />
       <disconnect value="STOP" />
-      <method v="2">
-        <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build For Debug" run_configuration_type="GoApplicationRunConfiguration" />
-      </method>
+      <method v="2" />
     </configuration>
     <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
       <option name="disconnectOption" value="STOP" />
@@ -151,7 +150,9 @@
       <option name="EXECUTE_IN_TERMINAL" value="false" />
       <option name="EXECUTE_SCRIPT_FILE" value="false" />
       <envs />
-      <method v="2" />
+      <method v="2">
+        <option name="RunConfigurationTask" enabled="true" run_configuration_name="Build For Debug" run_configuration_type="GoApplicationRunConfiguration" />
+      </method>
     </configuration>
     <configuration name="Setup Delve" type="ShConfigurationType">
       <option name="SCRIPT_TEXT" value="kitty -d ~/$PROJECT_DIR$ -e dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./Build_For_Debug" />
@@ -213,9 +214,21 @@
     <MESSAGE value="adding progress bars to list entries, general ui revamps" />
     <MESSAGE value="segment code, implement key binding hints" />
     <MESSAGE value="prettification and shit" />
-    <option name="LAST_COMMIT_MESSAGE" value="prettification and shit" />
+    <MESSAGE value="QoL updates, convert everything into a pointer, prevent nil errors in test data generation, and setup completion marking" />
+    <option name="LAST_COMMIT_MESSAGE" value="QoL updates, convert everything into a pointer, prevent nil errors in test data generation, and setup completion marking" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go</url>
+          <line>224</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

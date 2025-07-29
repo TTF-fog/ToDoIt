@@ -39,12 +39,12 @@ func generateRandomTask(r *rand.Rand, completionChance float64, folder *TaskFold
 	dueDate := time.Now().Add(time.Duration(r.Intn(72)-24) * time.Hour)
 	completed := r.Float64() < completionChance
 	return &Task{
-		name:         randomString(r, taskNames),
-		description:  randomString(r, taskDescriptions),
-		completed:    completed,
-		dueDate:      dueDate,
-		parentFolder: folder,
-		overdue:      !completed && dueDate.Before(time.Now()),
+		Name:         randomString(r, taskNames),
+		Desc:         randomString(r, taskDescriptions),
+		Completed:    completed,
+		DueDate:      dueDate,
+		ParentFolder: folder,
+		Overdue:      !completed && dueDate.Before(time.Now()),
 	}
 }
 
@@ -52,17 +52,17 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 	m := progress.New(progress.WithDefaultGradient())
 
 	folder := &TaskFolder{
-		title:    randomString(r, folderTitles),
-		desc:     randomString(r, folderDescriptions),
-		progress: m,
-		parent:   parent,
+		Name:     randomString(r, folderTitles),
+		Desc:     randomString(r, folderDescriptions),
+		Progress: m,
+		Parent:   parent,
 	}
 
 	completionChance := r.Float64()
 	numTasks := r.Intn(4) + 1
 	for i := 0; i < numTasks; i++ {
 		task := generateRandomTask(r, completionChance, folder)
-		folder.children_tasks = append(folder.children_tasks, task)
+		folder.ChildrenTasks = append(folder.ChildrenTasks, task)
 
 	}
 
@@ -70,23 +70,23 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 		numFolders := r.Intn(3)
 		for i := 0; i < numFolders; i++ {
 			childFolder := generateRandomTaskFolder(r, depth-1, folder)
-			folder.children_task_folders = append(folder.children_task_folders, childFolder)
+			folder.ChildrenTaskFolders = append(folder.ChildrenTaskFolders, childFolder)
 		}
 	}
 
 	completedCount := 0
 	overdueCount := 0
-	for _, task := range folder.children_tasks {
-		if task.completed {
+	for _, task := range folder.ChildrenTasks {
+		if task.Completed {
 			completedCount++
 		}
-		if task.overdue {
+		if task.Overdue {
 			overdueCount++
 		}
 	}
-	folder.status = status{
+	folder.Status = status{
 		completed: completedCount,
-		total:     len(folder.children_tasks),
+		total:     len(folder.ChildrenTasks),
 		overdue:   overdueCount,
 	}
 

@@ -13,21 +13,20 @@ import (
 )
 
 var docStyle = lipgloss.NewStyle().
-	Margin(1, 1).
 	BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("63"))
 
 const (
-	maxWidth       = 80
+	maxWidth       = 40
 	minFrameWidth  = 200
 	minFrameHeight = 200
-	padding        = 2
+	padding        = 1
 )
 
 var index int
 
 type itemDelegate struct{}
 
-func (d itemDelegate) Height() int { return 4 }
+func (d itemDelegate) Height() int { return 3 }
 
 func (d itemDelegate) Spacing() int { return 0 }
 
@@ -39,16 +38,16 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		s := item
 
 		var p float64
-		if s.Status.total > 0 {
-			p = float64(s.Status.completed) / float64(s.Status.total)
+		if s.Status.Total > 0 {
+			p = float64(s.Status.Completed) / float64(s.Status.Total)
 		}
 
-		str := fmt.Sprintf("%s\n %s \n%s", s.Title(), s.Status.print(), s.Progress.ViewAs(p))
+		str := fmt.Sprintf("%s \n %s \n %s", s.Title(), s.Status.print(), s.Progress.ViewAs(p))
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
 		if index == m.Index() {
 			fn = func(s ...string) string {
 				return lipgloss.NewStyle().
-					Padding(padding).BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).
+					Padding(0, padding).
 					Foreground(lipgloss.Color("201")).
 					Background(lipgloss.Color("235")).
 					Render("> " + strings.Join(s, " "))
@@ -65,9 +64,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
 		if index == m.Index() {
 			fn = func(s ...string) string {
-				return lipgloss.NewStyle().
-					Padding(padding).
-					BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).
+				return lipgloss.NewStyle().Padding(0, padding).
 					Foreground(lipgloss.Color("201")).
 					Background(lipgloss.Color("235")).
 					Render("> " + strings.Join(s, " "))
@@ -123,7 +120,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			switch v := m.list.SelectedItem().(type) {
 			case *Task:
-				m.alert.NewAlertCmd(bubbleup.ErrorKey, "Cannot preview Task!")
+				m.statusString = "Cannot preview item! "
 			case *TaskFolder:
 				m.statusString = v.returnTree()
 
@@ -145,8 +142,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if v > minFrameWidth && h > minFrameHeight {
 			m.alert.NewAlertCmd(bubbleup.ErrorKey, "Frame dimensions too small :(")
 		}
-		statusWidth := lipgloss.Width(docStyle.Render(m.statusString))
-		m.list.SetSize(msg.Width-statusWidth-h, msg.Height-v)
 		childMsg := tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
 		for _, val := range m.list.Items() {
 			if v, ok := val.(*TaskFolder); ok {
@@ -164,8 +159,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	var s string
 
-	v, _ := docStyle.GetFrameSize()
-	statusView := docStyle.Copy().MaxHeight(m.list.Height() + v).Render(m.statusString)
+	statusView := docStyle.Copy().Render(m.statusString)
+
 	s += lipgloss.JoinHorizontal(lipgloss.Left, statusView, docStyle.Render(m.list.View()))
 
 	return m.alert.Render(s)
@@ -184,14 +179,12 @@ func (m *model) recreateList(folder *TaskFolder, selectedItem int) {
 		items = append(items, child)
 	}
 	for _, child := range folder.ChildrenTasks {
-
 		items = append(items, child)
 	}
 	delegate := itemDelegate{}
 	newList := list.New(items, delegate, 0, 0)
 	newList.Title = fmt.Sprintf("%s \n %s", m.currentFolder.returnPath(), m.currentFolder.Status.print())
-	newList.SetSize(m.list.Width(), m.list.Height())
-
+	newList.SetSize(0, 8*len(items))
 	m.list = newList
 	m.list.Select(selectedItem)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
@@ -212,17 +205,12 @@ func main() {
 	root := err
 	root.Parent = nil
 	reconstructFolderFromJSON(root)
-	//for _, item := range items {
-	//	if folder, ok := item.(*TaskFolder); ok {
-	//		folder.Parent = &root
-	//		root.ChildrenTaskFolders = append(root.ChildrenTaskFolders, folder)
-	//	}
-	//}
+
 	m := model{list: list.New(nil, delegate, 0, 0)}
+	m.recreateList(root, m.list.GlobalIndex())
 	m.recreateList(root, m.list.GlobalIndex())
 	m.statusString = "Press P to preview an Item!"
 	m.list.Title = "Task View "
-	m.list.SetHeight(10)
 	m.rootFolder = root
 	p := tea.NewProgram(&m)
 

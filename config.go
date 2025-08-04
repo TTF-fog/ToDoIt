@@ -34,7 +34,7 @@ func (f *TaskFolder) DeepCopy() *TaskFolder {
 	if f.ChildrenTasks != nil {
 		newF.ChildrenTasks = make([]*Task, len(f.ChildrenTasks))
 		for i, task := range f.ChildrenTasks {
-			newF.ChildrenTasks[i] = task.deepCopy(newF)
+			newF.ChildrenTasks[i] = task.deepCopy()
 		}
 	}
 
@@ -49,7 +49,7 @@ func (f *TaskFolder) DeepCopy() *TaskFolder {
 	return newF
 }
 
-func (t *Task) deepCopy(parent *TaskFolder) *Task {
+func (t *Task) deepCopy() *Task {
 	if t == nil {
 		return nil
 	}

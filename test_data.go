@@ -84,10 +84,10 @@ func generateRandomTaskFolder(r *rand.Rand, depth int, parent *TaskFolder) *Task
 			overdueCount++
 		}
 	}
-	folder.Status = status{
-		completed: completedCount,
-		total:     len(folder.ChildrenTasks),
-		overdue:   overdueCount,
+	folder.Status = Status{
+		Completed: completedCount,
+		Total:     len(folder.ChildrenTasks),
+		Overdue:   overdueCount,
 	}
 
 	return folder

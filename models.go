@@ -32,7 +32,7 @@ type TaskFolder struct {
 	Parent              *TaskFolder   `json:"Parent,omitempty"`
 	ChildrenTasks       []*Task       `json:"children_tasks,omitempty"`
 	ChildrenTaskFolders []*TaskFolder `json:"children_task_folders,omitempty"`
-	Status              status        `json:"Status"`
+	Status              Status        `json:"Status"`
 }
 
 func (i *TaskFolder) Title() string       { return "📁" + i.Name }
@@ -127,7 +127,7 @@ func (t *Task) Description() string { return t.Desc }
 func (t *Task) setTimeStatus() {
 	if time.Now().After(t.DueDate) {
 		t.Overdue = true
-		t.ParentFolder.Status.overdue += 1
+		t.ParentFolder.Status.Overdue += 1
 	} else {
 		t.Overdue = false
 	}
@@ -135,28 +135,28 @@ func (t *Task) setTimeStatus() {
 func (t *Task) setCompletionStatus(status bool) {
 	if status {
 		t.Completed = true
-		t.ParentFolder.Status.completed += 1
+		t.ParentFolder.Status.Completed += 1
 	} else {
 		t.Completed = false
-		t.ParentFolder.Status.completed -= 1
+		t.ParentFolder.Status.Completed -= 1
 	}
 }
 
-type status struct {
-	completed int
-	total     int
-	overdue   int
+type Status struct {
+	Completed int `json:"Completed,omitempty"`
+	Total     int `json:"Total,omitempty"`
+	Overdue   int `json:"Overdue,omitempty"`
 }
 
-func (s *status) print() string {
+func (s *Status) print() string {
 
 	//render_info := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFED33")).Render
 	var pp_string string
-	if s.overdue > 0 {
-		pp_string += renderWarning(fmt.Sprintf("%d overdue, ", s.overdue))
+	if s.Overdue > 0 {
+		pp_string += renderWarning(fmt.Sprintf("%d overdue, ", s.Overdue))
 	} else {
-		pp_string += fmt.Sprintf("%d overdue, ", s.overdue)
+		pp_string += fmt.Sprintf("%d overdue, ", s.Overdue)
 	}
-	pp_string += fmt.Sprintf("%d/%d completed \n", s.completed, s.total)
+	pp_string += fmt.Sprintf("%d/%d completed \n", s.Completed, s.Total)
 	return pp_string
 }

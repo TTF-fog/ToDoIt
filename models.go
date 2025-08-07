@@ -15,6 +15,13 @@ type listKeyMap struct {
 	previewItem key.Binding
 	reloadData  key.Binding
 	goBack      key.Binding
+	newTask     key.Binding
+}
+type itemKeyMap struct {
+	goUp   key.Binding
+	goDown key.Binding
+	exit   key.Binding
+	save   key.Binding
 }
 
 func newListKeyMap() *listKeyMap {
@@ -22,6 +29,15 @@ func newListKeyMap() *listKeyMap {
 		previewItem: key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "preview task folder structure")),
 		goBack:      key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "go to previous folder")),
 		reloadData:  key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload data")),
+		newTask:     key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new task")),
+	}
+}
+func newItemKeyMap() *itemKeyMap {
+	return &itemKeyMap{
+		goUp:   key.NewBinding(key.WithKeys("Up Arrow"), key.WithHelp("Up Arrow", "go to up input")),
+		goDown: key.NewBinding(key.WithKeys("Down Arrow"), key.WithHelp("Down Arrow", "go to down input")),
+		exit:   key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "leave without creating")),
+		save:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "save changes")),
 	}
 }
 
@@ -52,7 +68,6 @@ func (i *TaskFolder) returnTree() string {
 	}
 	for _, i := range i.ChildrenTasks {
 		s += " -" + i.returnStatusString()
-
 	}
 	return s
 }
@@ -75,7 +90,7 @@ func (t *Task) returnStatusString() string {
 	if t.Completed {
 		s += "📝 (✓Completed!) " + t.Title() + "\n"
 		s += ""
-		s += t.Description() + "\n"
+		s += "\t" + t.Description() + "\n"
 	} else {
 		s += "📝 " + t.Title() + "\n"
 		if !t.DueDate.IsZero() {
@@ -85,7 +100,7 @@ func (t *Task) returnStatusString() string {
 				s += "📅" + t.DueDate.Format("DD/MM/06 15:04:05 ") + "\n"
 			}
 		}
-		s += t.Description() + "\n"
+		s += "\t" + t.Description() + "\n"
 	}
 
 	return s

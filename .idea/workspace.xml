@@ -7,14 +7,12 @@
     <option name="askBeforeDeletingLists" value="false" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="continue work on loading configs">
-      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/ToDoIt.iml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/ToDoIt.iml" afterDir="false" />
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="finally fix viewing issues, add status to structs">
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" afterDir="false" />
-      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/test_data.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -223,7 +221,8 @@
     <MESSAGE value="prettification and shit" />
     <MESSAGE value="QoL updates, convert everything into a pointer, prevent nil errors in test data generation, and setup completion marking" />
     <MESSAGE value="continue work on loading configs" />
-    <option name="LAST_COMMIT_MESSAGE" value="continue work on loading configs" />
+    <MESSAGE value="finally fix viewing issues, add status to structs" />
+    <option name="LAST_COMMIT_MESSAGE" value="finally fix viewing issues, add status to structs" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

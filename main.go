@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"go.dalton.dog/bubbleup"
@@ -26,7 +28,7 @@ var index int
 
 type itemDelegate struct{}
 
-func (d itemDelegate) Height() int { return 3 }
+func (d itemDelegate) Height() int { return 6 }
 
 func (d itemDelegate) Spacing() int { return 0 }
 
@@ -75,12 +77,18 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	}
 }
 
+type CreateNewUI struct {
+	taskNameInput textinput.Model
+	taskDescInput textarea.Model
+	creatingTask  bool
+}
 type model struct {
 	list          list.Model
 	statusString  string
 	currentFolder *TaskFolder
 	alert         bubbleup.AlertModel
 	rootFolder    *TaskFolder
+	createNewUI   *CreateNewUI
 }
 
 func (m *model) Init() tea.Cmd {
@@ -91,6 +99,54 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var alertCmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.createNewUI.creatingTask {
+			switch msg.String() {
+			case "enter":
+				//create folder
+				if msg.Alt == true {
+					m.currentFolder.ChildrenTaskFolders = append(m.currentFolder.ChildrenTaskFolders, &TaskFolder{
+						Name:   m.createNewUI.taskNameInput.Value(),
+						Parent: m.currentFolder,
+						Desc:   m.createNewUI.taskDescInput.Value(),
+					})
+					m.recreateList(m.currentFolder, 0)
+					m.createNewUI.creatingTask = false
+					m.createNewUI.taskNameInput.Reset()
+					m.createNewUI.taskDescInput.Reset()
+					break
+				}
+				m.currentFolder.ChildrenTasks = append(m.currentFolder.ChildrenTasks, &Task{
+					Name:         m.createNewUI.taskNameInput.Value(),
+					ParentFolder: m.currentFolder,
+					Desc:         m.createNewUI.taskDescInput.Value(),
+				})
+				m.recreateList(m.currentFolder, 0)
+				m.createNewUI.creatingTask = false
+				m.createNewUI.taskNameInput.Reset()
+				m.createNewUI.taskDescInput.Reset()
+			case "esc":
+				m.createNewUI.creatingTask = false
+				m.createNewUI.taskNameInput.Reset()
+				m.createNewUI.taskDescInput.Reset()
+			case "down":
+				m.createNewUI.taskNameInput.Blur()
+				m.createNewUI.taskDescInput.Focus()
+			case "up":
+				m.createNewUI.taskDescInput.Blur()
+				m.createNewUI.taskNameInput.Focus()
+			}
+			var cmds []tea.Cmd
+			var cmd tea.Cmd
+
+			m.createNewUI.taskNameInput, cmd = m.createNewUI.taskNameInput.Update(msg)
+			cmds = append(cmds, cmd)
+
+			m.createNewUI.taskDescInput, cmd = m.createNewUI.taskDescInput.Update(msg)
+			cmds = append(cmds, cmd)
+
+			return m, tea.Batch(cmds...)
+		}
+
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
@@ -134,12 +190,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentFolder.ChildrenTaskFolders, _ = SlicePop(m.currentFolder.ChildrenTaskFolders, m.list.GlobalIndex())
 				m.recreateList(m.currentFolder, 0)
 			}
+		case "n":
+			m.createNewUI.creatingTask = true
+			m.createNewUI.taskNameInput.Focus()
+			m.createNewUI.taskDescInput.Blur()
+			return m, nil
 
 		}
 
 	case tea.WindowSizeMsg:
-		v, h := docStyle.GetFrameSize()
-		if v > minFrameWidth && h > minFrameHeight {
+		h, v := docStyle.GetFrameSize()
+		listWidth := msg.Width - h
+		listHeight := msg.Height - v
+		m.list.SetSize(listWidth, listHeight)
+		if listWidth < minFrameWidth || listHeight < minFrameHeight {
 			m.alert.NewAlertCmd(bubbleup.ErrorKey, "Frame dimensions too small :(")
 		}
 		childMsg := tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
@@ -157,11 +221,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
+	if m.createNewUI.creatingTask {
+		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Right, m.createNewUI.taskNameInput.View(), "\n", m.createNewUI.taskDescInput.View()))
+	}
 	var s string
 
 	statusView := docStyle.Copy().Render(m.statusString)
 
-	s += lipgloss.JoinHorizontal(lipgloss.Left, statusView, docStyle.Render(m.list.View()))
+	s += lipgloss.JoinHorizontal(lipgloss.Left, statusView, m.list.View())
 
 	return m.alert.Render(s)
 }
@@ -181,16 +248,14 @@ func (m *model) recreateList(folder *TaskFolder, selectedItem int) {
 	for _, child := range folder.ChildrenTasks {
 		items = append(items, child)
 	}
-	delegate := itemDelegate{}
-	newList := list.New(items, delegate, 0, 0)
-	newList.Title = fmt.Sprintf("%s \n %s", m.currentFolder.returnPath(), m.currentFolder.Status.print())
-	newList.SetSize(0, 8*len(items))
-	m.list = newList
+	m.list.SetItems(items)
+	m.list.Title = fmt.Sprintf("%s \n %s", m.currentFolder.returnPath(), m.currentFolder.Status.print())
 	m.list.Select(selectedItem)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			keys.goBack,
 			keys.previewItem,
+			keys.newTask,
 		}
 	}
 }
@@ -206,8 +271,13 @@ func main() {
 	root.Parent = nil
 	reconstructFolderFromJSON(root)
 
-	m := model{list: list.New(nil, delegate, 0, 0)}
-	m.recreateList(root, m.list.GlobalIndex())
+	ti := textinput.New()
+	t2 := textarea.New()
+	ti.Placeholder = "New Task Name"
+	ti.CharLimit = 156
+	ti.Width = 20
+	t2.Placeholder = "Task Description"
+	m := model{list: list.New(nil, delegate, 80, 24), createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti}}
 	m.recreateList(root, m.list.GlobalIndex())
 	m.statusString = "Press P to preview an Item!"
 	m.list.Title = "Task View "

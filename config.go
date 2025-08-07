@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/bubbles/progress"
 	"os"
 )
 
@@ -81,6 +82,12 @@ func reconstructFolderFromJSON(Folder *TaskFolder) {
 	for range Folder.ChildrenTasks {
 		reconstructTasksFromJSON(Folder)
 	}
+	if Folder.Parent != nil {
+		Folder.Progress = progress.New()
+
+		Folder.Progress.SetPercent(float64(Folder.Status.Completed/Folder.Status.Total) * 100)
+	}
+
 }
 func reconstructTasksFromJSON(Folder *TaskFolder) {
 	for _, item := range Folder.ChildrenTasks {

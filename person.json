@@ -119,7 +119,7 @@
               "ParentFolder": null,
               "Name": "Buy a birthday gift for Sarah",
               "Desc": "The one on the corner of 1st and Elm.",
-              "Completed": true,
+              "Completed": false,
               "DueDate": "2025-08-05T20:24:56.445198278+05:30",
               "Overdue": false
             },
@@ -133,7 +133,7 @@
             }
           ],
           "Status": {
-            "Completed": 3,
+            "Completed": 2,
             "Total": 3
           }
         }
@@ -763,5 +763,7 @@
       }
     }
   ],
-  "Status": {}
+  "Status": {
+    "Completed": 1
+  }
 }

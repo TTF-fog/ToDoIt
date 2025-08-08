@@ -7,11 +7,9 @@
     <option name="askBeforeDeletingLists" value="false" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="finally fix viewing issues, add status to structs">
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="add new task UI (&quot;n&quot;), taskfolder laterpop">
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" afterDir="false" />
-      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -222,9 +220,22 @@
     <MESSAGE value="QoL updates, convert everything into a pointer, prevent nil errors in test data generation, and setup completion marking" />
     <MESSAGE value="continue work on loading configs" />
     <MESSAGE value="finally fix viewing issues, add status to structs" />
-    <option name="LAST_COMMIT_MESSAGE" value="finally fix viewing issues, add status to structs" />
+    <MESSAGE value="add new task UI (&quot;n&quot;), taskfolder laterpop" />
+    <option name="LAST_COMMIT_MESSAGE" value="add new task UI (&quot;n&quot;), taskfolder laterpop" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" log-message="true" suspend="NONE" type="DlvLineBreakpoint">
+          <url>file://$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go</url>
+          <line>103</line>
+          <log-expression expression="m.createNewUI.shouldCreateTaskFolder" language="go" />
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

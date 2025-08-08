@@ -78,9 +78,11 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 type CreateNewUI struct {
-	taskNameInput textinput.Model
-	taskDescInput textarea.Model
-	creatingTask  bool
+	taskNameInput          textinput.Model
+	status                 string
+	taskDescInput          textarea.Model
+	shouldCreateTaskFolder bool
+	creatingTask           bool
 }
 type model struct {
 	list          list.Model
@@ -102,8 +104,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.createNewUI.creatingTask {
 			switch msg.String() {
 			case "enter":
-				//create folder
-				if msg.Alt == true {
+				if m.createNewUI.shouldCreateTaskFolder {
 					m.currentFolder.ChildrenTaskFolders = append(m.currentFolder.ChildrenTaskFolders, &TaskFolder{
 						Name:   m.createNewUI.taskNameInput.Value(),
 						Parent: m.currentFolder,
@@ -134,7 +135,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "up":
 				m.createNewUI.taskDescInput.Blur()
 				m.createNewUI.taskNameInput.Focus()
+			case "t":
+				m.createNewUI.shouldCreateTaskFolder = !m.createNewUI.shouldCreateTaskFolder
+				if m.createNewUI.shouldCreateTaskFolder {
+					m.createNewUI.status = "Enter to Save, Esc to leave, Creating TaskFolder"
+				} else {
+					m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
+				}
+
 			}
+
 			var cmds []tea.Cmd
 			var cmd tea.Cmd
 
@@ -222,7 +232,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	if m.createNewUI.creatingTask {
-		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Right, m.createNewUI.taskNameInput.View(), "\n", m.createNewUI.taskDescInput.View()))
+		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Right, m.createNewUI.status, m.createNewUI.taskNameInput.View(), "\n", m.createNewUI.taskDescInput.View()))
 	}
 	var s string
 
@@ -281,7 +291,9 @@ func main() {
 	m.recreateList(root, m.list.GlobalIndex())
 	m.statusString = "Press P to preview an Item!"
 	m.list.Title = "Task View "
+	m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
 	m.rootFolder = root
+
 	p := tea.NewProgram(&m)
 
 	if _, err := p.Run(); err != nil {

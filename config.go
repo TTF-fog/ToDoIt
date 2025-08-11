@@ -71,7 +71,10 @@ func loadIntoTaskFolder(path string) (*TaskFolder, error) {
 		return nil, err
 	}
 	var Folder TaskFolder
-	json.Unmarshal(f, &Folder)
+	err = json.Unmarshal(f, &Folder)
+	if err != nil {
+		panic(err)
+	}
 	return &Folder, nil
 }
 func reconstructFolderFromJSON(Folder *TaskFolder) {
@@ -84,8 +87,10 @@ func reconstructFolderFromJSON(Folder *TaskFolder) {
 	}
 	if Folder.Parent != nil {
 		Folder.Progress = progress.New()
+		if Folder.Status.Total > 0 {
+			Folder.Progress.SetPercent(float64(Folder.Status.Completed/Folder.Status.Total) * 100)
+		}
 
-		Folder.Progress.SetPercent(float64(Folder.Status.Completed/Folder.Status.Total) * 100)
 	}
 
 }

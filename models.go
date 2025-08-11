@@ -32,14 +32,6 @@ func newListKeyMap() *listKeyMap {
 		newTask:     key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new task")),
 	}
 }
-func newItemKeyMap() *itemKeyMap {
-	return &itemKeyMap{
-		goUp:   key.NewBinding(key.WithKeys("Up Arrow"), key.WithHelp("Up Arrow", "go to up input")),
-		goDown: key.NewBinding(key.WithKeys("Down Arrow"), key.WithHelp("Down Arrow", "go to down input")),
-		exit:   key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "leave without creating")),
-		save:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "save changes")),
-	}
-}
 
 type TaskFolder struct {
 	Name                string `json:"Name,omitempty"`
@@ -57,7 +49,7 @@ func (i *TaskFolder) FilterValue() string { return i.Name }
 func (i *TaskFolder) returnTree() string {
 	s := "Task View \n"
 	//TODO make this recursive?
-
+	s += i.Desc + "\n"
 	for _, item := range i.ChildrenTaskFolders {
 		s += item.Title() + "\n"
 		for _, i := range item.ChildrenTasks {

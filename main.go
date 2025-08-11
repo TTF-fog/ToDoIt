@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,7 +25,7 @@ const (
 	padding        = 1
 )
 
-var index int
+var last_pos int
 
 type itemDelegate struct{}
 
@@ -83,6 +84,7 @@ type CreateNewUI struct {
 	taskDescInput          textarea.Model
 	shouldCreateTaskFolder bool
 	creatingTask           bool
+	edit                   bool
 }
 type model struct {
 	list          list.Model
@@ -91,6 +93,8 @@ type model struct {
 	alert         bubbleup.AlertModel
 	rootFolder    *TaskFolder
 	createNewUI   *CreateNewUI
+	itemsToDelete []list.Item
+	deletionMode  bool
 }
 
 func (m *model) Init() tea.Cmd {
@@ -101,26 +105,100 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var alertCmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.deletionMode {
+			switch msg.String() {
+			case "c":
+				var newTasks []*Task
+				for _, task := range m.currentFolder.ChildrenTasks {
+					isDeleting := false
+					for _, toDelete := range m.itemsToDelete {
+						if t, ok := toDelete.(*Task); ok && t == task {
+							isDeleting = true
+							break
+						}
+					}
+					if !isDeleting {
+						newTasks = append(newTasks, task)
+					}
+				}
+				m.currentFolder.ChildrenTasks = newTasks
+
+				var newFolders []*TaskFolder
+				for _, folder := range m.currentFolder.ChildrenTaskFolders {
+					isDeleting := false
+					for _, toDelete := range m.itemsToDelete {
+						if f, ok := toDelete.(*TaskFolder); ok && f == folder {
+							isDeleting = true
+							break
+						}
+					}
+					if !isDeleting {
+						newFolders = append(newFolders, folder)
+					}
+				}
+				m.currentFolder.ChildrenTaskFolders = newFolders
+
+				m.deletionMode = false
+				m.itemsToDelete = nil
+				m.statusString = "Deleted items."
+				m.recreateList(m.currentFolder, 0)
+				if err := m.rootFolder.DeepCopy(); err != nil {
+					MarshalToFile("person.json", err)
+				}
+
+				return m, nil
+			case "esc":
+				for _, item := range m.itemsToDelete {
+					switch v := item.(type) {
+					case *Task:
+						v.Name = strings.TrimSuffix(v.Name, " (queued for deletion)")
+					case *TaskFolder:
+						v.Name = strings.TrimSuffix(v.Name, " (queued for deletion)")
+					}
+				}
+				m.deletionMode = false
+				m.itemsToDelete = nil
+				m.statusString = "Deletion cancelled."
+				m.recreateList(m.currentFolder, m.list.Index())
+				return m, nil
+			}
+		}
 		if m.createNewUI.creatingTask {
 			switch msg.String() {
 			case "enter":
-				if m.createNewUI.shouldCreateTaskFolder {
-					m.currentFolder.ChildrenTaskFolders = append(m.currentFolder.ChildrenTaskFolders, &TaskFolder{
-						Name:   m.createNewUI.taskNameInput.Value(),
-						Parent: m.currentFolder,
-						Desc:   m.createNewUI.taskDescInput.Value(),
-					})
-					m.recreateList(m.currentFolder, 0)
+				if m.createNewUI.edit {
+					switch selectedItem := m.list.SelectedItem().(type) {
+					case *TaskFolder:
+						selectedItem.Name, selectedItem.Desc = m.createNewUI.taskNameInput.Value(), m.createNewUI.taskDescInput.Value()
+					case *Task:
+						selectedItem.Name, selectedItem.Desc = m.createNewUI.taskNameInput.Value(), m.createNewUI.taskDescInput.Value()
+					}
+
+					m.recreateList(m.currentFolder, m.list.GlobalIndex())
 					m.createNewUI.creatingTask = false
+					m.createNewUI.edit = false
 					m.createNewUI.taskNameInput.Reset()
 					m.createNewUI.taskDescInput.Reset()
+					if err := m.rootFolder.DeepCopy(); err != nil {
+						MarshalToFile("person.json", err)
+					}
 					break
 				}
-				m.currentFolder.ChildrenTasks = append(m.currentFolder.ChildrenTasks, &Task{
-					Name:         m.createNewUI.taskNameInput.Value(),
-					ParentFolder: m.currentFolder,
-					Desc:         m.createNewUI.taskDescInput.Value(),
-				})
+				if m.createNewUI.shouldCreateTaskFolder {
+					m.currentFolder.ChildrenTaskFolders = append(m.currentFolder.ChildrenTaskFolders, &TaskFolder{
+						Name:     m.createNewUI.taskNameInput.Value(),
+						Parent:   m.currentFolder,
+						Desc:     m.createNewUI.taskDescInput.Value(),
+						Progress: progress.New(),
+					})
+				} else {
+					m.currentFolder.ChildrenTasks = append(m.currentFolder.ChildrenTasks, &Task{
+						Name:         m.createNewUI.taskNameInput.Value(),
+						ParentFolder: m.currentFolder,
+						Desc:         m.createNewUI.taskDescInput.Value(),
+					})
+					m.currentFolder.Status.Total++
+				}
 				m.recreateList(m.currentFolder, 0)
 				m.createNewUI.creatingTask = false
 				m.createNewUI.taskNameInput.Reset()
@@ -129,22 +207,28 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.createNewUI.creatingTask = false
 				m.createNewUI.taskNameInput.Reset()
 				m.createNewUI.taskDescInput.Reset()
+				if m.createNewUI.shouldCreateTaskFolder {
+					m.createNewUI.status = "Enter to Save, Esc to leave, Creating TaskFolder"
+				} else {
+					m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
+				}
 			case "down":
 				m.createNewUI.taskNameInput.Blur()
 				m.createNewUI.taskDescInput.Focus()
 			case "up":
 				m.createNewUI.taskDescInput.Blur()
 				m.createNewUI.taskNameInput.Focus()
-			case "t":
+			case "alt+t":
+				if m.createNewUI.edit {
+					break
+				}
 				m.createNewUI.shouldCreateTaskFolder = !m.createNewUI.shouldCreateTaskFolder
 				if m.createNewUI.shouldCreateTaskFolder {
 					m.createNewUI.status = "Enter to Save, Esc to leave, Creating TaskFolder"
 				} else {
 					m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
 				}
-
 			}
-
 			var cmds []tea.Cmd
 			var cmd tea.Cmd
 
@@ -166,7 +250,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r": //reload test data
 			main()
 		case "enter":
-			index = m.list.GlobalIndex()
+			last_pos = m.list.Index()
 			switch selectedItem := m.list.SelectedItem().(type) {
 			case *TaskFolder:
 				m.recreateList(selectedItem, 0)
@@ -177,10 +261,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					MarshalToFile("person.json", err)
 				}
 			}
+		case "e":
+			m.createNewUI.creatingTask = true
+			m.createNewUI.edit = true
+			switch selectedItem := m.list.SelectedItem().(type) {
+			case *TaskFolder:
+				m.createNewUI.taskNameInput.SetValue(selectedItem.Name)
+				m.createNewUI.taskDescInput.SetValue(selectedItem.Desc)
+			case *Task:
 
+				m.createNewUI.taskNameInput.SetValue(selectedItem.Name)
+				m.createNewUI.taskDescInput.SetValue(selectedItem.Desc)
+			}
+			m.createNewUI.status = "Editing..."
 		case "b":
 			if m.currentFolder != nil {
-				m.recreateList(m.currentFolder.Parent, index)
+				m.recreateList(m.currentFolder.Parent, last_pos)
 			}
 			return m, nil
 		case "p":
@@ -192,18 +288,49 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			}
 		case "d":
-			switch m.list.SelectedItem().(type) {
-			case *Task:
-				m.currentFolder.ChildrenTasks, _ = SlicePop(m.currentFolder.ChildrenTasks, m.list.GlobalIndex())
-				m.recreateList(m.currentFolder, 0)
-			case *TaskFolder:
-				m.currentFolder.ChildrenTaskFolders, _ = SlicePop(m.currentFolder.ChildrenTaskFolders, m.list.GlobalIndex())
-				m.recreateList(m.currentFolder, 0)
+			m.deletionMode = true
+			selectedItem := m.list.SelectedItem()
+			var exists bool
+			for _, item := range m.itemsToDelete {
+				if item == selectedItem {
+					exists = true
+					break
+				}
 			}
+			if !exists {
+				m.itemsToDelete = append(m.itemsToDelete, selectedItem)
+			}
+
+			var itemNames []string
+			for _, item := range m.itemsToDelete {
+				switch v := item.(type) {
+				case *Task:
+					itemNames = append(itemNames, v.Name)
+				case *TaskFolder:
+					itemNames = append(itemNames, v.Name)
+				}
+			}
+			m.statusString = fmt.Sprintf("Deletions Pendnig: %d items queued \n [%s] \n. 'c' to confirm, 'esc' to escape. ", len(m.itemsToDelete), strings.Join(itemNames, "\n, "))
+
+			switch item := selectedItem.(type) {
+			case *Task:
+				if !strings.HasSuffix(item.Name, " (queued for deletion)") {
+					item.Name += " (queued for deletion)"
+				}
+			case *TaskFolder:
+				if !strings.HasSuffix(item.Name, " (queued for deletion)") {
+					item.Name += " (queued for deletion)"
+				}
+			}
+			m.recreateList(m.currentFolder, m.list.Index())
+			return m, nil
 		case "n":
 			m.createNewUI.creatingTask = true
 			m.createNewUI.taskNameInput.Focus()
 			m.createNewUI.taskDescInput.Blur()
+			if err := m.rootFolder.DeepCopy(); err != nil {
+				MarshalToFile("person.json", err)
+			}
 			return m, nil
 
 		}
@@ -216,6 +343,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if listWidth < minFrameWidth || listHeight < minFrameHeight {
 			m.alert.NewAlertCmd(bubbleup.ErrorKey, "Frame dimensions too small :(")
 		}
+		m.createNewUI.taskNameInput.Width = msg.Width - 20
+		m.createNewUI.taskDescInput.SetWidth(msg.Width - 20)
 		childMsg := tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
 		for _, val := range m.list.Items() {
 			if v, ok := val.(*TaskFolder); ok {
@@ -285,8 +414,9 @@ func main() {
 	t2 := textarea.New()
 	ti.Placeholder = "New Task Name"
 	ti.CharLimit = 156
-	ti.Width = 20
+	ti.Width = 100
 	t2.Placeholder = "Task Description"
+	t2.SetWidth(100)
 	m := model{list: list.New(nil, delegate, 80, 24), createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti}}
 	m.recreateList(root, m.list.GlobalIndex())
 	m.statusString = "Press P to preview an Item!"

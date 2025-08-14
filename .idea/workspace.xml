@@ -7,10 +7,12 @@
     <option name="askBeforeDeletingLists" value="false" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="add new task UI (&quot;n&quot;), taskfolder laterpop">
+    <list default="true" id="ae69dcf8-a677-4195-889b-9019321d52b6" name="Changes" comment="add description field to preview, prevent dividebyzero crash in config load, add enhanced deletion mode, bugfixes for deletion, added edit mode, fixed improper return behaviour, expanded config save triggers">
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/config.go" afterDir="false" />
       <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go" afterDir="false" />
-      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" beforeDir="false" afterPath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/models.go" afterDir="false" />
+      <change beforePath="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/person.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +88,7 @@
     </key>
   </component>
   <component name="RunManager" selected="Compound.Debug Bubbletea">
-    <configuration name="Build For Debug" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <configuration name="Build For Debug" type="GoApplicationRunConfiguration" factoryName="Go Application" activateToolWindowBeforeRun="false">
       <module name="ToDoIt" />
       <working_directory value="$USER_HOME$/$PROJECT_DIR$" />
       <go_parameters value="-gcflags=&quot;all=-N -l&quot;" />
@@ -128,7 +130,7 @@
       <filePath value="$USER_HOME$/home/ishaan/GolandProjects/ToDoIt" />
       <method v="2" />
     </configuration>
-    <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote">
+    <configuration name="Debug Bubbletea" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" focusToolWindowBeforeRun="true">
       <option name="disconnectOption" value="STOP" />
       <disconnect value="STOP" />
       <method v="2" />
@@ -221,21 +223,11 @@
     <MESSAGE value="continue work on loading configs" />
     <MESSAGE value="finally fix viewing issues, add status to structs" />
     <MESSAGE value="add new task UI (&quot;n&quot;), taskfolder laterpop" />
-    <option name="LAST_COMMIT_MESSAGE" value="add new task UI (&quot;n&quot;), taskfolder laterpop" />
+    <MESSAGE value="finish creating new TaskFolder" />
+    <MESSAGE value="add description field to preview, prevent dividebyzero crash in config load, add enhanced deletion mode, bugfixes for deletion, added edit mode, fixed improper return behaviour, expanded config save triggers" />
+    <option name="LAST_COMMIT_MESSAGE" value="add description field to preview, prevent dividebyzero crash in config load, add enhanced deletion mode, bugfixes for deletion, added edit mode, fixed improper return behaviour, expanded config save triggers" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" log-message="true" suspend="NONE" type="DlvLineBreakpoint">
-          <url>file://$USER_HOME$/home/ishaan/GolandProjects/ToDoIt/main.go</url>
-          <line>103</line>
-          <log-expression expression="m.createNewUI.shouldCreateTaskFolder" language="go" />
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

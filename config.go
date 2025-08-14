@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/charmbracelet/bubbles/progress"
 	"os"
@@ -67,14 +68,11 @@ func (t *Task) deepCopy() *Task {
 
 func loadIntoTaskFolder(path string) (*TaskFolder, error) {
 	f, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, os.ErrNotExist) == true {
+		os.WriteFile(path, []byte("{}"), 0644)
 	}
 	var Folder TaskFolder
-	err = json.Unmarshal(f, &Folder)
-	if err != nil {
-		panic(err)
-	}
+	_ = json.Unmarshal(f, &Folder)
 	return &Folder, nil
 }
 func reconstructFolderFromJSON(Folder *TaskFolder) {

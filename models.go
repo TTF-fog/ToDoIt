@@ -16,6 +16,11 @@ type listKeyMap struct {
 	reloadData  key.Binding
 	goBack      key.Binding
 	newTask     key.Binding
+	editItem    key.Binding
+	deleteItem  key.Binding
+	showHelp    key.Binding
+	quit        key.Binding
+	enterFolder key.Binding
 }
 type itemKeyMap struct {
 	goUp   key.Binding
@@ -30,6 +35,11 @@ func newListKeyMap() *listKeyMap {
 		goBack:      key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "go to previous folder")),
 		reloadData:  key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload data")),
 		newTask:     key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new task")),
+		editItem:    key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit item")),
+		deleteItem:  key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete item")),
+		showHelp:    key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "toggle help")),
+		quit:        key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
+		enterFolder: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "enter folder/toggle task")),
 	}
 }
 
@@ -126,7 +136,77 @@ type Task struct {
 	Overdue      bool
 }
 
+// ShortHelp returns keybindings to be shown in the mini help view. It's part
+// of the key.Map interface.
+func (k listKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.showHelp, k.quit}
+}
+
+// FullHelp returns keybindings for the expanded help view. It's part of the
+// key.Map interface.
+func (k listKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.enterFolder, k.goBack, k.newTask, k.editItem},                // first column
+		{k.deleteItem, k.previewItem, k.reloadData, k.showHelp, k.quit}, // second column
+	}
+}
+
+// CreateNewUI keymap
+type createNewKeyMap struct {
+	save       key.Binding
+	cancel     key.Binding
+	toggleType key.Binding
+	nextField  key.Binding
+	prevField  key.Binding
+}
+
+func newCreateNewKeyMap() createNewKeyMap {
+	return createNewKeyMap{
+		save:       key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "save")),
+		cancel:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "cancel")),
+		toggleType: key.NewBinding(key.WithKeys("alt+t"), key.WithHelp("alt+t", "toggle task/folder")),
+		nextField:  key.NewBinding(key.WithKeys("down"), key.WithHelp("down", "next field")),
+		prevField:  key.NewBinding(key.WithKeys("up"), key.WithHelp("up", "previous field")),
+	}
+}
+
+func (k createNewKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.save, k.cancel}
+}
+
+func (k createNewKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.save, k.cancel, k.toggleType}, // first column
+		{k.nextField, k.prevField},       // second column
+	}
+}
+
+// Deletion mode keymap
+type deletionKeyMap struct {
+	confirm key.Binding
+	cancel  key.Binding
+}
+
+func newDeletionKeyMap() deletionKeyMap {
+	return deletionKeyMap{
+		confirm: key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "confirm deletion")),
+		cancel:  key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "cancel deletion")),
+	}
+}
+
+func (k deletionKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.confirm, k.cancel}
+}
+
+func (k deletionKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.confirm, k.cancel},
+	}
+}
+
 var keys = newListKeyMap()
+var createKeys = newCreateNewKeyMap()
+var deleteKeys = newDeletionKeyMap()
 
 func (t *Task) FilterValue() string { return t.Name }
 func (t *Task) Title() string       { return t.Name }

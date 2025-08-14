@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
@@ -23,8 +25,10 @@ const (
 	minFrameWidth  = 200
 	minFrameHeight = 200
 	padding        = 1
+	TASK_MESSAGE   = "Alt+T to switch modes, Enter to Save, Esc to leave"
 )
 
+var config_path = "config.json"
 var last_pos int
 
 type itemDelegate struct{}
@@ -60,8 +64,6 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		return
 	case *Task:
 		s := item
-		if s.Overdue {
-		}
 		str := fmt.Sprintf("%s \n", s.returnStatusString())
 
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
@@ -95,6 +97,8 @@ type model struct {
 	createNewUI   *CreateNewUI
 	itemsToDelete []list.Item
 	deletionMode  bool
+	help          help.Model
+	showHelp      bool
 }
 
 func (m *model) Init() tea.Cmd {
@@ -143,7 +147,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.statusString = "Deleted items."
 				m.recreateList(m.currentFolder, 0)
 				if err := m.rootFolder.DeepCopy(); err != nil {
-					MarshalToFile("person.json", err)
+					MarshalToFile("config_path", err)
 				}
 
 				return m, nil
@@ -180,7 +184,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.createNewUI.taskNameInput.Reset()
 					m.createNewUI.taskDescInput.Reset()
 					if err := m.rootFolder.DeepCopy(); err != nil {
-						MarshalToFile("person.json", err)
+						MarshalToFile(config_path, err)
 					}
 					break
 				}
@@ -200,6 +204,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.currentFolder.Status.Total++
 				}
 				m.recreateList(m.currentFolder, 0)
+				if err := m.rootFolder.DeepCopy(); err != nil {
+					MarshalToFile(config_path, err)
+				}
 				m.createNewUI.creatingTask = false
 				m.createNewUI.taskNameInput.Reset()
 				m.createNewUI.taskDescInput.Reset()
@@ -207,11 +214,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.createNewUI.creatingTask = false
 				m.createNewUI.taskNameInput.Reset()
 				m.createNewUI.taskDescInput.Reset()
-				if m.createNewUI.shouldCreateTaskFolder {
-					m.createNewUI.status = "Enter to Save, Esc to leave, Creating TaskFolder"
-				} else {
-					m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
-				}
+
 			case "down":
 				m.createNewUI.taskNameInput.Blur()
 				m.createNewUI.taskDescInput.Focus()
@@ -224,9 +227,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.createNewUI.shouldCreateTaskFolder = !m.createNewUI.shouldCreateTaskFolder
 				if m.createNewUI.shouldCreateTaskFolder {
-					m.createNewUI.status = "Enter to Save, Esc to leave, Creating TaskFolder"
+					alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating TaskFolder")
+					return m, alertCmd
 				} else {
-					m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
+					alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task")
+					return m, alertCmd
 				}
 			}
 			var cmds []tea.Cmd
@@ -258,7 +263,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selectedItem.setCompletionStatus(!selectedItem.Completed)
 				m.recreateList(selectedItem.ParentFolder, m.list.GlobalIndex())
 				if err := m.rootFolder.DeepCopy(); err != nil {
-					MarshalToFile("person.json", err)
+					MarshalToFile(config_path, err)
 				}
 			}
 		case "e":
@@ -282,7 +287,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			switch v := m.list.SelectedItem().(type) {
 			case *Task:
-				m.statusString = "Cannot preview item! "
+				alertCmd = m.alert.NewAlertCmd(bubbleup.ErrorKey, "Cannot preview a Task")
+				return m, alertCmd
 			case *TaskFolder:
 				m.statusString = v.returnTree()
 
@@ -325,12 +331,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.recreateList(m.currentFolder, m.list.Index())
 			return m, nil
 		case "n":
+
 			m.createNewUI.creatingTask = true
 			m.createNewUI.taskNameInput.Focus()
 			m.createNewUI.taskDescInput.Blur()
-			if err := m.rootFolder.DeepCopy(); err != nil {
-				MarshalToFile("person.json", err)
+			if m.createNewUI.shouldCreateTaskFolder {
+				alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task Folder")
+				return m, alertCmd
+			} else {
+				alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task")
+				return m, alertCmd
 			}
+		case "h":
+			m.showHelp = !m.showHelp
 			return m, nil
 
 		}
@@ -340,9 +353,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		listWidth := msg.Width - h
 		listHeight := msg.Height - v
 		m.list.SetSize(listWidth, listHeight)
-		if listWidth < minFrameWidth || listHeight < minFrameHeight {
-			m.alert.NewAlertCmd(bubbleup.ErrorKey, "Frame dimensions too small :(")
-		}
 		m.createNewUI.taskNameInput.Width = msg.Width - 20
 		m.createNewUI.taskDescInput.SetWidth(msg.Width - 20)
 		childMsg := tea.WindowSizeMsg{Width: m.list.Width(), Height: m.list.Height()}
@@ -361,13 +371,42 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	if m.createNewUI.creatingTask {
-		return docStyle.Render(lipgloss.JoinVertical(lipgloss.Right, m.createNewUI.status, m.createNewUI.taskNameInput.View(), "\n", m.createNewUI.taskDescInput.View()))
+		var s string
+		if m.showHelp {
+			s = lipgloss.JoinVertical(lipgloss.Left,
+				m.createNewUI.status,
+				m.createNewUI.taskNameInput.View(),
+				m.createNewUI.taskDescInput.View(),
+				"\n"+m.help.View(createKeys),
+			)
+		} else {
+			s = lipgloss.JoinVertical(lipgloss.Right,
+				m.createNewUI.status,
+				m.createNewUI.taskNameInput.View(),
+				"\n",
+				m.createNewUI.taskDescInput.View(),
+			)
+		}
+		return docStyle.Render(m.alert.Render(s))
 	}
-	var s string
 
+	var s string
 	statusView := docStyle.Copy().Render(m.statusString)
 
-	s += lipgloss.JoinHorizontal(lipgloss.Left, statusView, m.list.View())
+	if m.showHelp {
+		var helpView string
+		if m.deletionMode {
+			helpView = m.help.View(deleteKeys)
+		} else {
+			helpView = m.help.View(*keys)
+		}
+		s += lipgloss.JoinVertical(lipgloss.Left,
+			lipgloss.JoinHorizontal(lipgloss.Left, statusView, m.list.View()),
+			"\n"+helpView,
+		)
+	} else {
+		s += lipgloss.JoinHorizontal(lipgloss.Left, statusView, m.list.View())
+	}
 
 	return m.alert.Render(s)
 }
@@ -395,21 +434,25 @@ func (m *model) recreateList(folder *TaskFolder, selectedItem int) {
 			keys.goBack,
 			keys.previewItem,
 			keys.newTask,
+			keys.editItem,
+			keys.deleteItem,
+			keys.showHelp,
 		}
 	}
 }
 func main() {
 
+	flag.StringVar(&config_path, "c", config_path, "config file path")
+	flag.Parse()
 	delegate := itemDelegate{}
 	err, ferr :=
-		loadIntoTaskFolder("person.json")
+		loadIntoTaskFolder(config_path)
 	if ferr != nil {
 		panic(ferr)
 	}
 	root := err
 	root.Parent = nil
 	reconstructFolderFromJSON(root)
-
 	ti := textinput.New()
 	t2 := textarea.New()
 	ti.Placeholder = "New Task Name"
@@ -417,11 +460,16 @@ func main() {
 	ti.Width = 100
 	t2.Placeholder = "Task Description"
 	t2.SetWidth(100)
-	m := model{list: list.New(nil, delegate, 80, 24), createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti}}
+	m := model{
+		list:        list.New(nil, delegate, 80, 24),
+		createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti},
+		help:        help.New(),
+		alert:       *bubbleup.NewAlertModel(20, true),
+	}
 	m.recreateList(root, m.list.GlobalIndex())
-	m.statusString = "Press P to preview an Item!"
+	m.statusString = "Press P to preview an Item! Press ? for help."
 	m.list.Title = "Task View "
-	m.createNewUI.status = "Enter to Save, Esc to leave, Creating Task"
+	m.createNewUI.status = TASK_MESSAGE
 	m.rootFolder = root
 
 	p := tea.NewProgram(&m)

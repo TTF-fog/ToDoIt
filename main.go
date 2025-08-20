@@ -14,7 +14,10 @@ import (
 	"go.dalton.dog/bubbleup"
 	"io"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var docStyle = lipgloss.NewStyle().
@@ -64,8 +67,16 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		return
 	case *Task:
 		s := item
-		str := fmt.Sprintf("%s \n", s.returnStatusString())
-
+		priorityStr := ""
+		switch s.Priority {
+		case 1:
+			priorityStr = fmt.Sprintf("Priority: %s", lipgloss.NewStyle().Foreground(lipgloss.Color("70")).Render("LOW"))
+		case 2:
+			priorityStr = fmt.Sprintf("Priority: %s", lipgloss.NewStyle().Foreground(lipgloss.Color("202")).Render("MED"))
+		case 3:
+			priorityStr = fmt.Sprintf("Priority: %s", lipgloss.NewStyle().Foreground(lipgloss.Color("124")).Render("HIGH"))
+		}
+		str := fmt.Sprintf("%s%s", s.returnStatusString(), priorityStr)
 		fn := lipgloss.NewStyle().PaddingLeft(4).Render
 		if index == m.Index() {
 			fn = func(s ...string) string {
@@ -84,8 +95,10 @@ type CreateNewUI struct {
 	taskNameInput          textinput.Model
 	status                 string
 	taskDescInput          textarea.Model
+	taskDueDateInput       textinput.Model
 	shouldCreateTaskFolder bool
 	creatingTask           bool
+	taskPriorityInput      textinput.Model
 	edit                   bool
 }
 type model struct {
@@ -97,6 +110,7 @@ type model struct {
 	createNewUI   *CreateNewUI
 	itemsToDelete []list.Item
 	deletionMode  bool
+	sortMode      bool
 	help          help.Model
 	showHelp      bool
 }
@@ -176,6 +190,25 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						selectedItem.Name, selectedItem.Desc = m.createNewUI.taskNameInput.Value(), m.createNewUI.taskDescInput.Value()
 					case *Task:
 						selectedItem.Name, selectedItem.Desc = m.createNewUI.taskNameInput.Value(), m.createNewUI.taskDescInput.Value()
+						if m.createNewUI.taskDueDateInput.Value() != "" {
+							dueDate, err := time.Parse("02/01/06 15:04", m.createNewUI.taskDueDateInput.Value())
+							if err != nil {
+								alertCmd = m.alert.NewAlertCmd(bubbleup.ErrorKey, "Invalid date format!")
+								return m, alertCmd
+							}
+							selectedItem.DueDate = dueDate
+							selectedItem.setTimeStatus()
+						}
+						if m.createNewUI.taskPriorityInput.Value() != "" {
+							prio := m.createNewUI.taskPriorityInput.Value()
+							if prio == "LOW" {
+								selectedItem.Priority = 1
+							} else if prio == "MED" {
+								selectedItem.Priority = 2
+							} else {
+								selectedItem.Priority = 3
+							}
+						}
 					}
 
 					m.recreateList(m.currentFolder, m.list.GlobalIndex())
@@ -183,6 +216,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.createNewUI.edit = false
 					m.createNewUI.taskNameInput.Reset()
 					m.createNewUI.taskDescInput.Reset()
+					m.createNewUI.taskPriorityInput.Reset()
 					if err := m.rootFolder.DeepCopy(); err != nil {
 						MarshalToFile(config_path, err)
 					}
@@ -196,11 +230,37 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						Progress: progress.New(),
 					})
 				} else {
-					m.currentFolder.ChildrenTasks = append(m.currentFolder.ChildrenTasks, &Task{
+					task := &Task{
 						Name:         m.createNewUI.taskNameInput.Value(),
 						ParentFolder: m.currentFolder,
 						Desc:         m.createNewUI.taskDescInput.Value(),
-					})
+					}
+					if m.createNewUI.taskDueDateInput.Value() != "" {
+						dueDate, err := time.Parse("02/01/06 15:04", m.createNewUI.taskDueDateInput.Value())
+						if err != nil {
+							alertCmd = m.alert.NewAlertCmd(bubbleup.ErrorKey, "Invalid date format!"+err.Error())
+							return m, alertCmd
+						}
+						task.DueDate = dueDate
+						task.setTimeStatus()
+					}
+					if m.createNewUI.taskPriorityInput.Value() != "" {
+						if m.createNewUI.taskPriorityInput.Value() != "" {
+							prio := m.createNewUI.taskPriorityInput.Value()
+							if prio == "LOW" {
+								task.Priority = 1
+							} else if prio == "MED" {
+								task.Priority = 2
+							} else if prio == "HIGH" {
+								task.Priority = 3
+							} else {
+								alertCmd = m.alert.NewAlertCmd(bubbleup.ErrorKey, "Invalid priority format!")
+								return m, alertCmd
+							}
+						}
+					}
+
+					m.currentFolder.ChildrenTasks = append(m.currentFolder.ChildrenTasks, task)
 					m.currentFolder.Status.Total++
 				}
 				m.recreateList(m.currentFolder, 0)
@@ -210,29 +270,73 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.createNewUI.creatingTask = false
 				m.createNewUI.taskNameInput.Reset()
 				m.createNewUI.taskDescInput.Reset()
+				m.createNewUI.taskDueDateInput.Reset()
+				m.createNewUI.taskPriorityInput.Reset()
 			case "esc":
 				m.createNewUI.creatingTask = false
+				m.createNewUI.status = ""
+				m.createNewUI.edit = false
+				m.createNewUI.shouldCreateTaskFolder = false
 				m.createNewUI.taskNameInput.Reset()
 				m.createNewUI.taskDescInput.Reset()
+				m.createNewUI.taskDueDateInput.Reset()
+				m.createNewUI.taskPriorityInput.Reset()
 
 			case "down":
-				m.createNewUI.taskNameInput.Blur()
-				m.createNewUI.taskDescInput.Focus()
+				if m.createNewUI.taskNameInput.Focused() {
+					m.createNewUI.taskNameInput.Blur()
+					m.createNewUI.taskDescInput.Focus()
+				} else if m.createNewUI.taskDescInput.Focused() {
+					m.createNewUI.taskDescInput.Blur()
+					if !m.createNewUI.shouldCreateTaskFolder {
+						m.createNewUI.taskDueDateInput.Focus()
+					} else {
+						m.createNewUI.taskNameInput.Focus()
+					}
+				} else if m.createNewUI.taskDueDateInput.Focused() {
+					m.createNewUI.taskDueDateInput.Blur()
+					m.createNewUI.taskPriorityInput.Focus()
+				} else if m.createNewUI.taskPriorityInput.Focused() {
+					m.createNewUI.taskPriorityInput.Blur()
+					m.createNewUI.taskNameInput.Focus()
+				}
 			case "up":
-				m.createNewUI.taskDescInput.Blur()
-				m.createNewUI.taskNameInput.Focus()
+				if m.createNewUI.taskNameInput.Focused() {
+					m.createNewUI.taskNameInput.Blur()
+					if m.createNewUI.shouldCreateTaskFolder {
+						m.createNewUI.taskDescInput.Focus()
+					} else {
+						m.createNewUI.taskPriorityInput.Focus()
+					}
+				} else if m.createNewUI.taskDescInput.Focused() {
+					m.createNewUI.taskDescInput.Blur()
+					m.createNewUI.taskNameInput.Focus()
+				} else if m.createNewUI.taskDueDateInput.Focused() {
+					m.createNewUI.taskDueDateInput.Blur()
+					m.createNewUI.taskDescInput.Focus()
+				} else if m.createNewUI.taskPriorityInput.Focused() {
+					m.createNewUI.taskPriorityInput.Blur()
+					m.createNewUI.taskDueDateInput.Focus()
+				}
 			case "alt+t":
 				if m.createNewUI.edit {
 					break
 				}
 				m.createNewUI.shouldCreateTaskFolder = !m.createNewUI.shouldCreateTaskFolder
+				m.createNewUI.taskNameInput.Focus()
+				m.createNewUI.taskDescInput.Blur()
+				m.createNewUI.taskDueDateInput.Blur()
+				m.createNewUI.taskPriorityInput.Blur()
 				if m.createNewUI.shouldCreateTaskFolder {
+					m.createNewUI.status = "New Folder: " + TASK_MESSAGE
 					alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating TaskFolder")
 					return m, alertCmd
 				} else {
+					m.createNewUI.status = "New Task: " + TASK_MESSAGE
 					alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task")
 					return m, alertCmd
 				}
+
 			}
 			var cmds []tea.Cmd
 			var cmd tea.Cmd
@@ -243,7 +347,52 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.createNewUI.taskDescInput, cmd = m.createNewUI.taskDescInput.Update(msg)
 			cmds = append(cmds, cmd)
 
+			m.createNewUI.taskDueDateInput, cmd = m.createNewUI.taskDueDateInput.Update(msg)
+			cmds = append(cmds, cmd)
+
+			m.createNewUI.taskPriorityInput, cmd = m.createNewUI.taskPriorityInput.Update(msg)
+			cmds = append(cmds, cmd)
+
 			return m, tea.Batch(cmds...)
+		}
+
+		if m.sortMode {
+			switch msg.String() {
+			case "1":
+				vm := make([]*Task, len(m.currentFolder.ChildrenTasks))
+				copy(vm, m.currentFolder.ChildrenTasks)
+				sort.Slice(vm, func(i, j int) bool {
+					return vm[i].Priority > vm[j].Priority
+				})
+				m.currentFolder.ChildrenTasks = vm
+				m.recreateList(m.currentFolder, 0)
+				m.sortMode = false
+				m.statusString = "Sorted by priority"
+			case "2":
+				vm := make([]*Task, len(m.currentFolder.ChildrenTasks))
+				copy(vm, m.currentFolder.ChildrenTasks)
+				sort.Slice(vm, func(i, j int) bool {
+					return vm[i].Name > vm[j].Name
+				})
+				m.currentFolder.ChildrenTasks = vm
+				m.recreateList(m.currentFolder, 0)
+				m.sortMode = false
+				m.statusString = "Sorted by name"
+			case "3":
+				vm := make([]*Task, len(m.currentFolder.ChildrenTasks))
+				copy(vm, m.currentFolder.ChildrenTasks)
+				sort.SliceStable(vm, func(i, j int) bool {
+					return vm[i].Completed != vm[j].Completed
+				})
+				m.currentFolder.ChildrenTasks = vm
+				m.recreateList(m.currentFolder, 0)
+				m.sortMode = false
+				m.statusString = "Sorted by completion status "
+			case "esc":
+				m.sortMode = false
+				m.statusString = "Cancelled sort mode"
+			}
+			return m, nil
 		}
 
 		if m.list.FilterState() == list.Filtering {
@@ -252,8 +401,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "r": //reload test data
+		case "r":
 			main()
+		case "f":
+			m.statusString = "In sort mode, sort by (1) Priority / (2) Name / (3) Completion Status"
+			m.sortMode = true
+			return m, nil
 		case "enter":
 			last_pos = m.list.Index()
 			switch selectedItem := m.list.SelectedItem().(type) {
@@ -269,16 +422,30 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "e":
 			m.createNewUI.creatingTask = true
 			m.createNewUI.edit = true
+			m.createNewUI.taskNameInput.Focus()
+			m.createNewUI.taskDescInput.Blur()
+			m.createNewUI.taskDueDateInput.Blur()
+			m.createNewUI.taskPriorityInput.Blur()
 			switch selectedItem := m.list.SelectedItem().(type) {
 			case *TaskFolder:
+				m.createNewUI.shouldCreateTaskFolder = true
+				m.createNewUI.status = "Editing Folder: " + TASK_MESSAGE
 				m.createNewUI.taskNameInput.SetValue(selectedItem.Name)
 				m.createNewUI.taskDescInput.SetValue(selectedItem.Desc)
 			case *Task:
-
+				m.createNewUI.shouldCreateTaskFolder = false
+				m.createNewUI.status = "Editing Task: " + TASK_MESSAGE
 				m.createNewUI.taskNameInput.SetValue(selectedItem.Name)
 				m.createNewUI.taskDescInput.SetValue(selectedItem.Desc)
+				if !selectedItem.DueDate.IsZero() {
+					m.createNewUI.taskDueDateInput.SetValue(selectedItem.DueDate.Format("02/01/06 15:04"))
+				}
+				if selectedItem.Priority != 0 {
+					m.createNewUI.taskPriorityInput.SetValue(strconv.Itoa(selectedItem.Priority))
+				} else {
+					m.createNewUI.taskPriorityInput.SetValue("")
+				}
 			}
-			m.createNewUI.status = "Editing..."
 		case "b":
 			if m.currentFolder != nil {
 				m.recreateList(m.currentFolder.Parent, last_pos)
@@ -316,7 +483,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					itemNames = append(itemNames, v.Name)
 				}
 			}
-			m.statusString = fmt.Sprintf("Deletions Pendnig: %d items queued \n [%s] \n. 'c' to confirm, 'esc' to escape. ", len(m.itemsToDelete), strings.Join(itemNames, "\n, "))
+			m.statusString = fmt.Sprintf("Deletions Pendnig: %d items queued \n [%s]'c' to confirm, 'esc' to escape. ", len(m.itemsToDelete), strings.Join(itemNames, "\n, "))
 
 			switch item := selectedItem.(type) {
 			case *Task:
@@ -331,14 +498,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.recreateList(m.currentFolder, m.list.Index())
 			return m, nil
 		case "n":
-
 			m.createNewUI.creatingTask = true
 			m.createNewUI.taskNameInput.Focus()
 			m.createNewUI.taskDescInput.Blur()
 			if m.createNewUI.shouldCreateTaskFolder {
+				m.createNewUI.status = "New Folder: " + TASK_MESSAGE
 				alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task Folder")
 				return m, alertCmd
 			} else {
+				m.createNewUI.status = "New Task: " + TASK_MESSAGE
 				alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Creating Task")
 				return m, alertCmd
 			}
@@ -377,6 +545,8 @@ func (m *model) View() string {
 				m.createNewUI.status,
 				m.createNewUI.taskNameInput.View(),
 				m.createNewUI.taskDescInput.View(),
+				m.createNewUI.taskDueDateInput.View(),
+				m.createNewUI.taskPriorityInput.View(),
 				"\n"+m.help.View(createKeys),
 			)
 		} else {
@@ -385,13 +555,17 @@ func (m *model) View() string {
 				m.createNewUI.taskNameInput.View(),
 				"\n",
 				m.createNewUI.taskDescInput.View(),
+				"\n",
+				m.createNewUI.taskDueDateInput.View(),
+				"\n",
+				m.createNewUI.taskPriorityInput.View(),
 			)
 		}
 		return docStyle.Render(m.alert.Render(s))
 	}
 
 	var s string
-	statusView := docStyle.Copy().Render(m.statusString)
+	statusView := docStyle.Render(m.statusString)
 
 	if m.showHelp {
 		var helpView string
@@ -431,22 +605,27 @@ func (m *model) recreateList(folder *TaskFolder, selectedItem int) {
 	m.list.Select(selectedItem)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
-			keys.goBack,
-			keys.previewItem,
-			keys.newTask,
-			keys.editItem,
-			keys.deleteItem,
-			keys.showHelp,
+			key.NewBinding(key.WithKeys("? (shift+/)"), key.WithHelp("? (shift+/)", "show full help")),
+		}
+	}
+	m.list.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "enable advanced sorting")),
+			key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "go to upper level")),
+			key.NewBinding(key.WithKeys("enter"), key.WithHelp("d", "enter deletion mode")),
+			key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "create new item")),
+			key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "edit item")),
+			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "enter folder/toggle item")),
 		}
 	}
 }
+
 func main() {
 
 	flag.StringVar(&config_path, "c", config_path, "config file path")
 	flag.Parse()
 	delegate := itemDelegate{}
-	err, ferr :=
-		loadIntoTaskFolder(config_path)
+	err, ferr := loadIntoTaskFolder(config_path)
 	if ferr != nil {
 		panic(ferr)
 	}
@@ -455,19 +634,25 @@ func main() {
 	reconstructFolderFromJSON(root)
 	ti := textinput.New()
 	t2 := textarea.New()
-	ti.Placeholder = "New Task Name"
+	ti.Placeholder = "New Task Name (Mandatory)"
 	ti.CharLimit = 156
 	ti.Width = 100
-	t2.Placeholder = "Task Description"
+	t2.Placeholder = "Task Description (Mandatory)"
 	t2.SetWidth(100)
+	t3 := textinput.New()
+	t3.Placeholder = "DD/MM/YY HH:MM (Optional)"
+	t3.Width = 100
+	t4 := textinput.New()
+	t4.Placeholder = "Priority (LOW/MED/HIGH) (Optional)"
+	t4.Width = 100
 	m := model{
 		list:        list.New(nil, delegate, 80, 24),
-		createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti},
+		createNewUI: &CreateNewUI{taskDescInput: t2, taskNameInput: ti, taskDueDateInput: t3, taskPriorityInput: t4},
 		help:        help.New(),
 		alert:       *bubbleup.NewAlertModel(20, true),
 	}
 	m.recreateList(root, m.list.GlobalIndex())
-	m.statusString = "Press P to preview an Item! Press ? for help."
+	m.statusString = "Press P to preview an Item!"
 	m.list.Title = "Task View "
 	m.createNewUI.status = TASK_MESSAGE
 	m.rootFolder = root

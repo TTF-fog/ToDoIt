@@ -55,7 +55,9 @@ type TaskFolder struct {
 
 func (i *TaskFolder) Title() string       { return "📁" + i.Name }
 func (i *TaskFolder) Description() string { return i.Desc }
-func (i *TaskFolder) FilterValue() string { return i.Name }
+func (i *TaskFolder) FilterValue() string {
+	return i.Name
+}
 func (i *TaskFolder) returnTree() string {
 	s := "Task View \n"
 	//TODO make this recursive?
@@ -82,7 +84,6 @@ func (i *TaskFolder) returnPath() string {
 		current = current.Parent
 	}
 
-	//otherwise it ends up being bottom-to-top
 	slices.Reverse(pathParts)
 	return strings.Join(pathParts, " > ")
 }
@@ -97,14 +98,16 @@ func (t *Task) returnStatusString() string {
 		s += "📝 " + t.Title() + "\n"
 		if !t.DueDate.IsZero() {
 			if t.Overdue {
-				s += render_warning("📅 Overdue! %s\n", t.DueDate.Format("2006-01-02 15:04:05"))
+				s += render_warning("📅 Overdue! %s\n", t.DueDate.Format("02/01/06 15:04"))
 			} else {
-				s += "📅" + t.DueDate.Format("DD/MM/06 15:04:05 ") + "\n"
+				s += "📅" + t.DueDate.Format("02/01/06 15:04") + "\n"
 			}
 		}
-		s += "\t" + t.Description() + "\n"
-	}
+		if t.Description() != "" {
+			s += "\t" + t.Description() + "\n"
+		}
 
+	}
 	return s
 }
 
@@ -133,17 +136,13 @@ type Task struct {
 	Desc         string
 	Completed    bool
 	DueDate      time.Time
+	Priority     int
 	Overdue      bool
 }
 
-// ShortHelp returns keybindings to be shown in the mini help view. It's part
-// of the key.Map interface.
 func (k listKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.showHelp, k.quit}
 }
-
-// FullHelp returns keybindings for the expanded help view. It's part of the
-// key.Map interface.
 func (k listKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.enterFolder, k.goBack, k.newTask, k.editItem},                // first column
@@ -151,7 +150,6 @@ func (k listKeyMap) FullHelp() [][]key.Binding {
 	}
 }
 
-// CreateNewUI keymap
 type createNewKeyMap struct {
 	save       key.Binding
 	cancel     key.Binding
@@ -176,12 +174,11 @@ func (k createNewKeyMap) ShortHelp() []key.Binding {
 
 func (k createNewKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.save, k.cancel, k.toggleType}, // first column
-		{k.nextField, k.prevField},       // second column
+		{k.save, k.cancel, k.toggleType},
+		{k.nextField, k.prevField},
 	}
 }
 
-// Deletion mode keymap
 type deletionKeyMap struct {
 	confirm key.Binding
 	cancel  key.Binding

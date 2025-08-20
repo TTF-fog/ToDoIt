@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.6
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/ethanefung/bubble-datepicker v0.1.0
 	go.dalton.dog/bubbleup v1.0.0
 )
 
@@ -32,5 +33,5 @@ require (
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/text v0.13.0 // indirect
 )

@@ -62,6 +62,7 @@ func (t *Task) deepCopy() *Task {
 		Completed: t.Completed,
 		DueDate:   t.DueDate,
 		Overdue:   t.Overdue,
+		Priority:  t.Priority,
 	}
 	return newTask
 }
